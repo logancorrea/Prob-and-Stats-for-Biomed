@@ -1,5 +1,5 @@
 ---
-title: "R Practice - THIS IS A TEST"
+title: "R Practice"
 output: 
   html_document:
     toc: true # table of content true
