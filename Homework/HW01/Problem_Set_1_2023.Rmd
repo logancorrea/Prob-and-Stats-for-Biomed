@@ -38,7 +38,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r class.source="bg-danger", class.output="bg-warning"}
 #setwd("type/here/the/address/")
-setwd("/Users/javier/Documents/Jupyter/BMI_6106_2022/Problem_Sets/HW1/")
+setwd("C:/Users/logan/Documents/GitHub/Prob-and-Stats-for-Biomed/Homework/HW01/")
 ```
 
 #### just to make sure that the file is there let's see which files are in this directory<br>
