@@ -145,14 +145,16 @@ head(B_Samples)
   # (ii) Smaller than 31?
   # (iii) Between 25 and 31?
     
-# 3  Markov Chain:
-# physical exercise training method A is used only 5% of the time, a person using method A will stay with this method 85% of the time, 
-# and a person not using method A will switch to method A about 65% time. 
-# At the beginning of the experiment only 5% of people usedmethod A.
+# 3 Naïve Bayes classifier
+# For this exercise we are going to build a Naïve Bayes classifier to try to predict
+# bening/malignant from measurements taken from breast mass using characteristics
+# of cell nuclei taken from digitized. The dataset should be available on canvas
   
-  # 1.	Generate a transition matrix for this Markov chain
-  # 2.	Generate a transition plot (using R or by hand as an image it’s valid)
-  # 3.	Plot the change in the probabilities over time for both methods until the 10th time unit.
+  # 1. Explain the performance of your classifier.
+  # 2. Investigate a bit about different types of naïve bayes classifiers, using that
+  # information what could you change that might improve the performance of
+  # this classifier for this dataset?
+    
   
 
   
