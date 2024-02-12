@@ -139,11 +139,21 @@ p <- 0.7
 # Calculate probability 
 dbinom(k, size = n, prob = p)
 
-# 2C If a sample of test scores is normally distributed with a mean of 42 and a standard deviation of 8, 
-# what percent of the scores is:
-# (i) Greater than 25?
-# (ii) Smaller than 31?
-# (iii) Between 25 and 31?
+# If a sample of test scores is normally distributed with a mean of 42 and a
+# standard deviation of 8, what percent of the scores is:
+
+# Mean and standard deviation
+mean <- 42
+sd <- 8
+
+# (i) Greater than 25
+1 - pnorm(25, mean, sd)
+
+# (ii) Smaller than 31
+pnorm(31, mean, sd)
+
+# (iii) Between 25 and 31
+pnorm(31, mean, sd) - pnorm(25, mean, sd)
 
 # 3 Naïve Bayes classifier
 # For this exercise we are going to build a Naïve Bayes classifier to try to predict
