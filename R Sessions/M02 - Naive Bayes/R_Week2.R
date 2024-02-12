@@ -7,11 +7,11 @@
 
 ###Where is your dataset located? you can either import it from where it is located or set your working directory.
 
-setwd("/Users/javier/Documents/Jupyter/MBIO_6490_2023/R_Sessions/Week_2")
+setwd("C:/Users/logan/Documents/GitHub/Prob-and-Stats-for-Biomed/R Sessions/M02 - Naive Bayes")
 
 ##load csv
-diabetes = read.csv("/Users/javier/Documents/Jupyter/MBIO_6490_2023/R_Sessions/Week_2/diabetes.csv")
-
+diabetes <- read.csv("diabetes.csv")
+head(diabetes)
 #Pregnancies: To express the Number of pregnancies
 #Glucose: To express the Glucose level in blood
 #BloodPressure: To express the Blood pressure measurement
@@ -202,7 +202,3 @@ library(pROC)
 roc_ = roc(testing$Outcome,predict(model, newdata = testing, type ="prob")[,2])
 
 plot(roc_)
-
-
-
-

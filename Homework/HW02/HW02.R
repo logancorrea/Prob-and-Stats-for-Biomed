@@ -3,8 +3,8 @@
 setwd("C:/Users/logan/Documents/GitHub/Prob-and-Stats-for-Biomed/Homework/HW02/")
 #setwd("/workspaces/Prob-and-Stats-for-Biomed/Homework/HW02")
 
-# Load dataset 
-B_Samples = read.table("birthwt.txt", sep = "", header = T)
+# Load dataset
+B_Samples <- read.table("birthwt.txt", sep = "", header = T)
 head(B_Samples)
 
 # 1A How many observations are in the dataset?
@@ -113,16 +113,16 @@ white_prob * phys_prob
 # P(Positive|No Cancer) = 0.08
 # P(No Cancer) = 1 - P(Cancer)
 
-pCancer <- 0.01
-pPositive_Cancer <- 0.9
-pPositive_No_Cancer <- 0.08
-PNo_Cancer <- 1-pCancer
+pcancer <- 0.01
+ppositive_cancer <- 0.9
+ppositive_no_cancer <- 0.08
+pno_cancer <- 1-pcancer
 
 # P(Positive) = P(Positive|Cancer)*P(Cancer)+P(Positive|No Cancer)*P(No Cancer)
-pPositive <- pPositive_Cancer * pCancer + pPositive_No_Cancer * PNo_Cancer
+ppositive <- ppositive_cancer * pcancer + ppositive_no_cancer * pno_cancer
 
 # P(Cancer|Positive) = P(Positive|Cancer)*P(Cancer)/P(Positive)
-pPositive_Cancer * pCancer / pPositive
+ppositive_cancer * pcancer / ppositive
 
 # 2B For every attempt to call your friend, there is a 70% probability of actually speaking with them. 
 # Calculate the probability of having exactly 12 successes in 20 attempts.  
@@ -159,6 +159,9 @@ pnorm(31, mean, sd) - pnorm(25, mean, sd)
 # For this exercise we are going to build a Naïve Bayes classifier to try to predict
 # bening/malignant from measurements taken from breast mass using characteristics
 # of cell nuclei taken from digitized. The dataset should be available on canvas
+
+breast_cancer <- read.csv("Breast_cancer_Naive.csv", header = TRUE)
+head(breast_cancer)
 
 # 1. Explain the performance of your classifier.
 # 2. Investigate a bit about different types of naïve bayes classifiers, using that
