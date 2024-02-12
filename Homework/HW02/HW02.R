@@ -1,6 +1,7 @@
 # Problem Set 2
 
-setwd("C:/Users/logan/Documents/GitHub/Prob-and-Stats-for-Biomed/Homework/HW02/")
+#setwd("C:/Users/logan/Documents/GitHub/Prob-and-Stats-for-Biomed/Homework/HW02/")
+setwd("/workspaces/Prob-and-Stats-for-Biomed/Homework/HW02")
 
 # Load dataset 
 B_Samples = read.table("birthwt.txt", sep = "", header = T)
