@@ -163,7 +163,52 @@ pnorm(31, mean, sd) - pnorm(25, mean, sd)
 breast_cancer <- read.csv("Breast_cancer_Naive.csv", header = TRUE)
 head(breast_cancer)
 
+#Get number of columns
+ncol(breast_cancer)
+
+library(caret)
+
+breast_cancer$diagnosis <- as.factor(breast_cancer$diagnosis)
+
+#split data into training and test data sets
+set.seed(998) # For reproducibility
+indxTrain <- createDataPartition(y = breast_cancer$diagnosis, p = 0.75, list = FALSE)
+training <- breast_cancer[indxTrain, ]
+testing <- breast_cancer[-indxTrain, ]
+
+#create objects x which holds the predictor variables and y 
+#which holds the response variables
+x <- training[, -(1:2)]
+y <- training$diagnosis
+
+#Run the naive bayes algorithm on the training dataset using a resampling method
+model = train(x,y,'naive_bayes',trControl=trainControl(method='cv',number=10))
+
+#Model Evaluation
+#Predict using the testing set
+Predict <- predict(model,newdata = testing )
+
+
+#Get the confusion matrix to see accuracy value and other parameter values
+confusionMatrix(Predict, testing$diagnosis )
+
+#Plot Variable performance
+X <- varImp(model)
+plot(X)
+
+#Scatterplot of top two variables
+testing$prediction = as.character(Predict)
+testing$index = 1:nrow(testing)
+testing$logic = ifelse((testing$diagnosis==testing$prediction) & (testing$diagnosis==0),0,
+                       ifelse(testing$diagnosis==testing$prediction & testing$diagnosis==1,1,
+                              ifelse(!(testing$diagnosis==testing$prediction) & testing$diagnosis==0,2,3)))
+
+ggplot(testing, aes(x=area_worst, y=perimeter_worst,color = factor(logic))) + geom_point(size = 3)
+
+
 # 1. Explain the performance of your classifier.
+
+
 # 2. Investigate a bit about different types of naïve bayes classifiers, using that
 # information what could you change that might improve the performance of
 # this classifier for this dataset?
