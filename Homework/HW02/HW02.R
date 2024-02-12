@@ -208,7 +208,17 @@ ggplot(testing, aes(x=area_worst, y=perimeter_worst,color = factor(logic))) + ge
 
 # 1. Explain the performance of your classifier.
 
+# Approximately 95.77% of all predictions were correct. This is a high accuracy rate, indicating that the classifier performs well overall.
+# The P-value is less than 0.05 which means the model is significant.
+# 97.75% of actual benign cases were correctly identified by the model. This high sensitivity indicates the model is very effective at identifying benign instances.
+# 92.45% of actual malignant cases were correctly identified. This high specificity indicates the model is very effective at identifying malignant instances.
+# Overall, these statistics indicate that the Naive Bayes classifier performs exceptionally well in distinguishing between benign and malignant breast cancer cases, 
+# with high accuracy, sensitivity, and specificity.
 
 # 2. Investigate a bit about different types of naïve bayes classifiers, using that
 # information what could you change that might improve the performance of
 # this classifier for this dataset?
+
+# A Gaussian Naive Bayes classifier might be useful for this dataset,
+# as it assumes that the continuous values associated with each class are distributed according to a Gaussian distribution.
+# Since the dataset contains many continuous variables, this might be a better fit than the default Naive Bayes classifier.
