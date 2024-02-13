@@ -7,9 +7,10 @@ library(RColorBrewer)
 library(tidyverse)
 
 
-setwd("/Users/javier/Documents/Jupyter/MBIO_6490_2023/R_Sessions/Week_4")
+setwd("/Users/logancorrea/Documents/GitHub/Prob-and-Stats-for-Biomed/R Sessions/M04 - Bayesian Networks")
 ##This dataset evaluate predictor that are believe to influence student scores
 Student_scores = read.csv("Student_scores.csv")
+head(Student_scores)
 
 M <-cor(Student_scores)
 corrplot(M, type="upper", order="hclust",
