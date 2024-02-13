@@ -11,32 +11,6 @@ apply(asia, 2, table)/5000
 ##Convert all variables to factors
 asia <- asia %>% mutate_if(is.numeric,as.factor)
 
-###Apply a bootstrapping approach with 500 runs, using the greedy HC algorithm
-net_bnlearn = boot.strength(data = asia, R = 500, algorithm = "hc",
-                            algorithm.args = list(score = "bde",iss=10))
-
-##Query
-net_bnlearn[net_bnlearn$strength>0.85 & (net_bnlearn$direction>=0.5),]
-
-##What is the best threshold of strength to segment the network? 
-averaged.network(net_bnlearn)
-
-##Construct and averaged network
-avg.boot = averaged.network(net_bnlearn, threshold = 0.50)
-
-plot(avg.boot)
-
-##Attach probability tables to the structure we just learned
-fitted = bn.fit(avg.boot, asia, method = "bayes")
-
-##One way to plot the network
-library(graph)
-library(igraph)
-g <- igraph.from.graphNEL(as.graphNEL(fitted))
-
-plot(g)
-
-
 ####
 ###Exact Network
 data(asia)
@@ -98,3 +72,28 @@ querygrain(setEvidence(net_fit_junction_asia, nodes = c("D","T"),
                        states = c("yes","no"),
                        propagate = T), 
            nodes = "B")
+
+###Apply a bootstrapping approach with 500 runs, using the greedy HC algorithm
+net_bnlearn = boot.strength(data = asia, R = 500, algorithm = "hc",
+                            algorithm.args = list(score = "bde",iss=10))
+
+##Query
+net_bnlearn[net_bnlearn$strength>0.85 & (net_bnlearn$direction>=0.5),]
+
+##What is the best threshold of strength to segment the network? 
+averaged.network(net_bnlearn)
+
+##Construct and averaged network
+avg.boot = averaged.network(net_bnlearn, threshold = 0.50)
+
+plot(avg.boot)
+
+##Attach probability tables to the structure we just learned
+fitted = bn.fit(avg.boot, asia, method = "bayes")
+
+##One way to plot the network
+library(graph)
+library(igraph)
+g <- igraph.from.graphNEL(as.graphNEL(fitted))
+
+plot(g)
