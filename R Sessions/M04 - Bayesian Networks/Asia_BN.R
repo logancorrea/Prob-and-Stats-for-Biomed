@@ -36,6 +36,44 @@ g <- igraph.from.graphNEL(as.graphNEL(fitted))
 
 plot(g)
 
+
+####
+###Exact Network
+data(asia)
+library(dplyr)
+##################-----This will convert the factors to integers
+Asia_Num = asia %>% mutate_if(is.factor,as.integer)
+#
+detach("package:bnlearn", unload=TRUE)
+library(bnstruct)
+data2015_bnstruct <- BNDataset(data = Asia_Num,
+                               discreteness = rep(T, ncol(Asia_Num)),
+                               variables = colnames(Asia_Num),
+                               starts.from = 1,
+                               node.sizes = c(replicate(ncol(Asia_Num),2)))
+##################-----Learn the structure of the object using the exact algorithm
+Exactnet_bnstruct <- learn.network(data2015_bnstruct,algo = "sm", scoring.func = "BIC")
+library(Rgraphviz)
+
+plot(Exactnet_bnstruct)
+##################-----Save the adjacent matrix and use it in bnlearn to fit the data to best structure
+netdata2015_bnstruct_dag = Exactnet_bnstruct@dag
+##################-----Convert numeric to factor
+data2015_ALA_BN_fact <- data2015_ALA_BN_Num %>% mutate_if(is.integer,as.factor)
+##################-----Create an empty graph with the variables from the dataset
+detach("package:bnstruct", unload=TRUE)
+library(bnlearn)
+data2015_ALA_BN_fact.net2 = empty.graph(names(Asia_Num))
+##################-----Get the adjacent matrix from bnstruct
+amat(data2015_ALA_BN_fact.net2) <- netdata2015_bnstruct_dag
+##################-----Fit the data to the structure
+net_fit <- bn.fit(data2015_ALA_BN_fact.net2, asia, method = "bayes")
+##################----------------######################
+##################----------------######################
+g_exact <- igraph.from.graphNEL(as.graphNEL(net_fit))
+
+plot(g_exact)
+
 ##Convert the bn.fit object to a grain object to get propagated probability calculations
 net_fit_junction_asia = compile(as.grain(fitted), propagate = T)
 
@@ -60,38 +98,3 @@ querygrain(setEvidence(net_fit_junction_asia, nodes = c("D","T"),
                        states = c("yes","no"),
                        propagate = T), 
            nodes = "B")
-
-####
-###Exact Network
-data(asia)
-library(dplyr)
-##################-----This will convert the factors to integers
-Asia_Num = asia %>% mutate_if(is.factor,as.integer)
-#
-detach("package:bnlearn", unload=TRUE)
-library(bnstruct)
-data2015_bnstruct <- BNDataset(data = Asia_Num,
-                               discreteness = rep(T, ncol(Asia_Num)),
-                               variables = colnames(Asia_Num),
-                               starts.from = 1,
-                               node.sizes = c(replicate(ncol(Asia_Num),2)))
-##################-----Learn the structure of the object using the exact algorithm
-Exactnet_bnstruct <- learn.network(data2015_bnstruct,algo = "sm", scoring.func = "BIC")
-plot(Exactnet_bnstruct)
-##################-----Save the adjacent matrix and use it in bnlearn to fit the data to best structure
-netdata2015_bnstruct_dag = Exactnet_bnstruct@dag
-##################-----Convert numeric to factor
-data2015_ALA_BN_fact <- data2015_ALA_BN_Num %>% mutate_if(is.integer,as.factor)
-##################-----Create an empty graph with the variables from the dataset
-detach("package:bnstruct", unload=TRUE)
-library(bnlearn)
-data2015_ALA_BN_fact.net2 = empty.graph(names(Asia_Num))
-##################-----Get the adjacent matrix from bnstruct
-amat(data2015_ALA_BN_fact.net2) <- netdata2015_bnstruct_dag
-##################-----Fit the data to the structure
-net_fit <- bn.fit(data2015_ALA_BN_fact.net2, asia, method = "bayes")
-##################----------------######################
-##################----------------######################
-g_exact <- igraph.from.graphNEL(as.graphNEL(net_fit))
-
-plot(g_exact)
