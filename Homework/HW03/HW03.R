@@ -1,7 +1,15 @@
+
 ## A. It is thought that smoking affects fetus growth and development and we want to test whether smoking during pregnancy reduces fetal weight. You want to test this idea.
 #### (i) What kind of statistical test should you use? Is this a parametric or non-parametric test, and what are the specific assumptions about data that underlie this test?
+# two-sample t-test
+# parametric test
+
 #### (ii) What is your null hypothesis?
+# H0 = There is no difference in mean birth weight between babies born to mothers who smoked during pregnancy and those who did not.
+
 #### (iii) What is your alternative hypothesis?
+# HA = Babies born to mothers who smoked during pregnancy will have a lower birth weight than those whose mothers did not smoke.
+
 #### (iv) Run the test.
 #### (v) What is your conclusion?
 
