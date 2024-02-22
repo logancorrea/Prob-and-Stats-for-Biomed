@@ -1,8 +1,7 @@
 
 ## A. It is thought that smoking affects fetus growth and development and we want to test whether smoking during pregnancy reduces fetal weight. You want to test this idea.
 #### (i) What kind of statistical test should you use? Is this a parametric or non-parametric test, and what are the specific assumptions about data that underlie this test?
-# two-sample t-test
-# parametric test
+# We will use a two-sample t-test, which is a parametric test. We assume the data is normally distributed and that the samples are independent of each other.
 
 #### (ii) What is your null hypothesis?
 # H0 = There is no difference in mean birth weight between babies born to mothers who smoked during pregnancy and those who did not.
@@ -11,17 +10,38 @@
 # HA = Babies born to mothers who smoked during pregnancy will have a lower birth weight than those whose mothers did not smoke.
 
 #### (iv) Run the test.
+setwd("/Users/logancorrea/Documents/GitHub/Prob-and-Stats-for-Biomed/Homework/HW03")
+birthwt <- read.table("birthwt.txt", header = TRUE)
+t_test_result <- t.test(bwt ~ smoke, data = birthwt)
+print(t_test_result)
+
 #### (v) What is your conclusion?
+# The p-value is less than 0.05 rejecting the null hypothesis. This indicates that smoking has a significant effect on birth weight.
 
 
 
 ## B. You want to compare the birth weights between individuals whose mothers identified as different races in this study.
 #### (i) What kind of statistical test should you use? Is this a parametric or non-parametric test, and what are the specific assumptions about data that underlie this test?
-#### (ii) What is your null hypothesis?
-#### (iii) What is your alternative hypothesis?
-#### (iv) Run the test/tests.
-#### (v) What is your conclusion, with respect to which pairs of specific groups have significant differences in birth weight?
+# We will use a one-way ANOVA, which is a parametric test. We assume the data is normally distributed and that the samples are independent of each other.
 
+#### (ii) What is your null hypothesis?
+# H0 = race does not effect birth weight
+
+#### (iii) What is your alternative hypothesis?
+# HA = Race has an effect on birth weight
+
+#### (iv) Run the test/tests. race: (‘1’ = white, ‘2’ = black, ‘3’ = other)
+birthwt$race <- factor(birthwt$race)
+
+anova_result <- aov(bwt ~ race, data = birthwt)
+summary(anova_result)
+
+TukeyHSD(anova_result)
+
+#### (v) What is your conclusion, with respect to which pairs of specific groups have significant differences in birth weight?
+# The ANOVA p-value is less than 0.05, rejecting the null hypothesis. This indicates that some races have a significant effect on birth weight.
+# The Tukey's HSD test revealed that white (1) and black (2) races and white and other (3) races have significantly different birth weights.
+# The p-value for other and black races was greater than 0.05, which means there is no significant difference.
 
 
 ## C. A study was conducted to investigate the effect of physical training on the serum cholesterol level.
