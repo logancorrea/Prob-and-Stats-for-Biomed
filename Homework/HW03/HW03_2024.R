@@ -6,9 +6,17 @@
 
 # 1. Point Estimate:
 ## Calculate the mean age for the entire population based on the collected sample.
+setwd("/Users/logancorrea/Documents/GitHub/Prob-and-Stats-for-Biomed/Homework/HW03")
+smoking <- read.csv("smoking.csv")
+smoking_mean <- mean(smoking$age)
+print(smoking_mean)
 
 # 2. Random Sampling:
 ##  Randomly select a subset of 50 patients from the dataset without replacement. Calculate the mean age for this subset. 
+set.seed(1)
+subset_smoking <- smoking[sample(nrow(smoking), 50, replace = FALSE), ]
+mean_age_subset <- mean(subset_smoking$age)
+print(mean_age_subset)
 
 #3. Resampling:
 ##  Perform bootstrapping on the entire dataset to estimate the sampling distribution of the mean age for the cohort 
