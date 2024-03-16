@@ -1,5 +1,8 @@
 
-setwd("C:/Users/logan/Documents/GitHub/Prob-and-Stats-for-Biomed/Final Project")
+library(psych)
+
+
+setwd("~/Documents/GitHub/Prob-and-Stats-for-Biomed/Final Project")
 
 # Import TSV files
 clinical <- read.table("Data/clinical.tsv", header = TRUE, sep = "\t", fill = TRUE, quote = "")
@@ -39,4 +42,19 @@ modified_data_frames <- lapply(data_frames, replace_dash_with_NA)
 
 list2env(modified_data_frames, envir = .GlobalEnv)
 
-str(clinical)
+# filter columns in clinical df
+
+clinical_cleaned = subset(clinical, select = c("case_id", "ethnicity", "gender", "race", "vital_status", "age_at_diagnosis", "ajcc_pathologic_stage", "treatment_or_therapy", "treatment_type"))
+str(clinical_cleaned)
+
+# Convert age column to int and years
+clinical_cleaned$age_at_diagnosis <- as.integer(clinical_cleaned$age_at_diagnosis)
+
+clinical_cleaned$age_at_diagnosis <- ifelse(clinical_cleaned$age_at_diagnosis > 150,
+                                            clinical_cleaned$age_at_diagnosis / 365,
+                                            round(clinical_cleaned$age_at_diagnosis))
+
+# Remove rows that don't have vital_status
+clinical_cleaned <- subset(clinical_cleaned, !is.na(vital_status))
+
+describe(clinical_cleaned)
