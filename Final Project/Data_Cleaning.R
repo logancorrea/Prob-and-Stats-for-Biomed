@@ -64,6 +64,7 @@ clinical_cleaned[c("age_at_diagnosis", "days_to_death",
 clinical_cleaned$age_at_diagnosis <- ifelse(clinical_cleaned$age_at_diagnosis > 150,
                                             clinical_cleaned$age_at_diagnosis / 365,
                                             round(clinical_cleaned$age_at_diagnosis, digits = 2))
+
 ## Remove rows that don't have vital_status
 clinical_cleaned <- subset(clinical_cleaned, !is.na(vital_status))
 
