@@ -26,6 +26,9 @@ modified_data_frames <- lapply(data_frames, replace_dash_with_NA)
 
 list2env(modified_data_frames, envir = .GlobalEnv)
 
+# remove irrelevant rows from exposure
+exposure <- subset(exposure, !is.na(cigarettes_per_day))
+
 # combine clinical and exposure based on case id
 clinical_cleaned <- merge(clinical, exposure, by = "case_id", all.x = TRUE, all.y = TRUE)
 
@@ -68,6 +71,12 @@ clinical_cleaned <- subset(clinical_cleaned, !is.na(vital_status))
 clinical_cleaned <- clinical_cleaned %>% mutate(age_at_death = age_at_diagnosis + days_to_death/365)
 clinical_cleaned <- clinical_cleaned %>% relocate(age_at_death, .after = age_at_diagnosis)
 
+# Create smoker and non smoker subsets
+clinical_cleaned$smoker <- 0
+clinical_cleaned$smoker <- ifelse(!is.na(clinical_cleaned$cigarettes_per_day) & clinical_cleaned$cigarettes_per_day > 0, 1, 0)
+clinical_cleaned <- clinical_cleaned %>% relocate(smoker, .before = cigarettes_per_day)
+
+
 # Gene cleaning
 ## Remove unnecessary columns from genes
 gene_cleaned <- subset(genes, select = -c(num_gdc_ssm_affected_cases, 
@@ -94,12 +103,15 @@ print(clinical_table)
 ## clinical continuous descriptive statistics
 clinical_stats <- describe(subset(clinical_cleaned, select = c(age_at_diagnosis, 
                                                                age_at_death, 
-                                                               days_to_death, 
+                                                               days_to_death,
+                                                               smoker,
                                                                cigarettes_per_day,
                                                                exposure_duration_years,
                                                                pack_years_smoked,
                                                                years_smoked)))
 print(clinical_stats)
+
+
 clinical_stats <- subset(clinical_stats, select = -c(range, skew, kurtosis, se))
 png("test.png", height = 800, width = 1200)
 grid.table(clinical_table)
