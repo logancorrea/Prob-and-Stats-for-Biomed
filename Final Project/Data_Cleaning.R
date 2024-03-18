@@ -73,8 +73,8 @@ clinical_cleaned <- clinical_cleaned %>% mutate(age_at_death = age_at_diagnosis 
 clinical_cleaned <- clinical_cleaned %>% relocate(age_at_death, .after = age_at_diagnosis)
 
 # Create smoker and non smoker subsets
-clinical_cleaned$smoker <- 0
-clinical_cleaned$smoker <- ifelse(!is.na(clinical_cleaned$cigarettes_per_day) & clinical_cleaned$cigarettes_per_day > 0, 1, 0)
+clinical_cleaned$smoker <- NA
+clinical_cleaned$smoker <- ifelse(!is.na(clinical_cleaned$cigarettes_per_day) & clinical_cleaned$cigarettes_per_day > 0, "Yes", "No")
 clinical_cleaned <- clinical_cleaned %>% relocate(smoker, .before = cigarettes_per_day)
 
 
