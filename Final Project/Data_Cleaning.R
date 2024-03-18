@@ -45,21 +45,15 @@ clinical_cleaned = subset(clinical_cleaned, select = c(case_id,
                                                primary_diagnosis,
                                                treatment_type,
                                                cigarettes_per_day,
-                                               exposure_duration_years,
-                                               exposure_type,
-                                               pack_years_smoked,
-                                               tobacco_smoking_status,
-                                               years_smoked))
+                                               pack_years_smoked))
 
 
 ## Convert columns to numeric
 clinical_cleaned[c("age_at_diagnosis", "days_to_death", 
                    "cigarettes_per_day", 
-                   "exposure_duration_years", 
-                   "pack_years_smoked", "years_smoked")] <- lapply(clinical_cleaned[c("age_at_diagnosis", "days_to_death", 
+                   "pack_years_smoked")] <- lapply(clinical_cleaned[c("age_at_diagnosis", "days_to_death", 
                                                                                       "cigarettes_per_day", 
-                                                                                      "exposure_duration_years", 
-                                                                                      "pack_years_smoked", "years_smoked")], as.numeric)
+                                                                                      "pack_years_smoked")], as.numeric)
 ## Convert to days to years
 clinical_cleaned$age_at_diagnosis <- ifelse(clinical_cleaned$age_at_diagnosis > 150,
                                             clinical_cleaned$age_at_diagnosis / 365,
@@ -95,9 +89,7 @@ clinical_table <- apply(subset(clinical_cleaned, select = -c(case_id,
                                                              age_at_death, 
                                                              days_to_death,
                                                              cigarettes_per_day,
-                                                             exposure_duration_years,
-                                                             pack_years_smoked,
-                                                             years_smoked)),2,table)
+                                                             pack_years_smoked)),2,table)
 
 print(clinical_table)
 
@@ -105,11 +97,8 @@ print(clinical_table)
 clinical_stats <- describe(subset(clinical_cleaned, select = c(age_at_diagnosis, 
                                                                age_at_death, 
                                                                days_to_death,
-                                                               smoker,
                                                                cigarettes_per_day,
-                                                               exposure_duration_years,
-                                                               pack_years_smoked,
-                                                               years_smoked)))
+                                                               pack_years_smoked)))
 print(clinical_stats)
 
 
