@@ -58,7 +58,7 @@ clinical_cleaned$age_at_diagnosis <- ifelse(clinical_cleaned$age_at_diagnosis > 
                                             round(clinical_cleaned$age_at_diagnosis, digits = 2))
 
 ## Remove rows that don't have vital_status
-clinical_cleaned <- subset(clinical_cleaned, !is.na(vital_status))
+clinical_cleaned <- subset(clinical_cleaned, !is.na(vital_status) & vital_status != "Not Reported" & vital_status != "Unknown")
 
 ## Calculate age at death
 clinical_cleaned <- clinical_cleaned %>% mutate(age_at_death = age_at_diagnosis + days_to_death/365)
@@ -82,7 +82,18 @@ gene_cleaned <- subset(genes, select = -c(num_gdc_ssm_affected_cases,
 
 # Descriptive statistics
 
-## Clinical_cleaned categorical descriptive statistics
+## clinical
+clinical_stats <- describe(subset(clinical_cleaned, select = c(age_at_diagnosis, 
+                                                               age_at_death, 
+                                                               days_to_death,
+                                                               cigarettes_per_day,
+                                                               pack_years_smoked)))
+print(clinical_stats)
+clinical_stats <- subset(clinical_stats, select = -c(range, skew, kurtosis, se))
+png("clinical_stats.png", height = 50*nrow(clinical_stats), width = 200*ncol(clinical_stats))
+grid.table(clinical_stats)
+dev.off()
+
 clinical_table <- apply(subset(clinical_cleaned, select = -c(case_id, 
                                                              age_at_diagnosis, 
                                                              age_at_death, 
@@ -92,64 +103,29 @@ clinical_table <- apply(subset(clinical_cleaned, select = -c(case_id,
 
 print(clinical_table)
 
-smoker_table <- apply(subset(smoker, select = -c(case_id, 
-                                                             age_at_diagnosis, 
-                                                             age_at_death, 
-                                                             days_to_death,
-                                                             cigarettes_per_day,
-                                                             pack_years_smoked)),2,table)
-
-print(smoker_table)
-
-non_smoker_table <- apply(subset(non_smoker, select = -c(case_id, 
-                                                             age_at_diagnosis, 
-                                                             age_at_death, 
-                                                             days_to_death,
-                                                             cigarettes_per_day,
-                                                             pack_years_smoked)),2,table)
-
-print(non_smoker_table)
-
-## smoker and non-smoker continuous descriptive statistics
-## smoker
-smoker_stats <- describe(subset(smoker, select = c(age_at_diagnosis, 
-                                                               age_at_death, 
-                                                               days_to_death,
-                                                               cigarettes_per_day,
-                                                               pack_years_smoked)))
-
-smoker_stats <- subset(smoker_stats, select = -c(range, skew, kurtosis, se))
-png("smoker_stats.png", height = 50*nrow(smoker_stats), width = 200*ncol(smoker_stats))
-grid.table(smoker_stats)
-dev.off()
-
-## non_smoker
-non_smoker_stats <- describe(subset(non_smoker, select = c(age_at_diagnosis, 
-                                                       age_at_death, 
-                                                       days_to_death,
-                                                       cigarettes_per_day,
-                                                       pack_years_smoked)))
-
-non_smoker_stats <- subset(non_smoker_stats, select = -c(range, skew, kurtosis, se))
-png("non_smoker_stats.png", height = 50*nrow(non_smoker_stats), width = 200*ncol(non_smoker_stats))
-grid.table(non_smoker_stats)
-dev.off()
-
-## clinical
-clinical_stats <- describe(subset(clinical_cleaned, select = c(age_at_diagnosis, 
-                                                           age_at_death, 
-                                                           days_to_death,
-                                                           cigarettes_per_day,
-                                                           pack_years_smoked)))
-
-clinical_stats <- subset(clinical_stats, select = -c(range, skew, kurtosis, se))
-png("clinical_stats.png", height = 50*nrow(clinical_stats), width = 200*ncol(clinical_stats))
-grid.table(clinical_stats)
-dev.off()
 
 ## Create image for gene descriptive statistics
 gene_stats <- describe(subset(gene_cleaned, select = -c(gene_id, symbol, name, cytoband, type)))
 gene_stats <- subset(gene_stats, select = -c(range, skew, kurtosis, se))
 png("gene_stats.png", height = 50*nrow(gene_stats), width = 200*ncol(gene_stats))
 grid.table(gene_stats)
+dev.off()
+
+## Create bar chart for gene distributions
+gene_10 <- gene_cleaned[1:10,]
+gene_bar <- setNames(gene_10$cohort_ssm_affected_cases_percentage, gene_10$symbol)
+
+# Open a PNG device to save the plot
+png(file = "gene_distribution_barplot.png", width = 800, height = 600)
+
+# Creating the bar chart with genes on the x-axis and percentages on the y-axis
+barplot(gene_bar,
+        main = "Distribution of Most Frequently Mutated Genes in Lung Adenocarcinomas",
+        xlab = "Gene",
+        ylab = "% of Cases Affected",
+        col = "seagreen",
+        las = 1, # Makes gene names perpendicular to the axis for better readability
+)
+
+# Close the device to save the file
 dev.off()
