@@ -2,8 +2,6 @@ library(psych)
 library(dplyr)
 library(gridExtra)
 
-setwd("~/GitHub/Prob-and-Stats-for-Biomed/Final Project")
-
 # Import TSV files
 clinical <- read.table("Data/clinical.tsv", header = TRUE, sep = "\t", fill = TRUE, quote = "")
 exposure <- read.table("Data/exposure.tsv", header = TRUE, sep = "\t", fill = TRUE, quote = "")
@@ -71,6 +69,9 @@ clinical_cleaned$smoker <- NA
 clinical_cleaned$smoker <- ifelse(!is.na(clinical_cleaned$cigarettes_per_day) & clinical_cleaned$cigarettes_per_day > 0, "Yes", "No")
 clinical_cleaned <- clinical_cleaned %>% relocate(smoker, .before = cigarettes_per_day)
 
+smoker <- subset(clinical_cleaned, smoker == "Yes")
+non_smoker <- subset(clinical_cleaned, smoker == "No")
+
 
 # Gene cleaning
 ## Remove unnecessary columns from genes
@@ -80,8 +81,6 @@ gene_cleaned <- subset(genes, select = -c(num_gdc_ssm_affected_cases,
                                           annotations))
 
 # Descriptive statistics
-##https://uc-r.github.io/descriptives_categorical
-#https://cran.r-project.org/web/packages/finalfit/vignettes/export.html
 
 ## Clinical_cleaned categorical descriptive statistics
 clinical_table <- apply(subset(clinical_cleaned, select = -c(case_id, 
@@ -93,20 +92,60 @@ clinical_table <- apply(subset(clinical_cleaned, select = -c(case_id,
 
 print(clinical_table)
 
-## clinical continuous descriptive statistics
-clinical_stats <- describe(subset(clinical_cleaned, select = c(age_at_diagnosis, 
+smoker_table <- apply(subset(smoker, select = -c(case_id, 
+                                                             age_at_diagnosis, 
+                                                             age_at_death, 
+                                                             days_to_death,
+                                                             cigarettes_per_day,
+                                                             pack_years_smoked)),2,table)
+
+print(smoker_table)
+
+non_smoker_table <- apply(subset(non_smoker, select = -c(case_id, 
+                                                             age_at_diagnosis, 
+                                                             age_at_death, 
+                                                             days_to_death,
+                                                             cigarettes_per_day,
+                                                             pack_years_smoked)),2,table)
+
+print(non_smoker_table)
+
+## smoker and non-smoker continuous descriptive statistics
+## smoker
+smoker_stats <- describe(subset(smoker, select = c(age_at_diagnosis, 
                                                                age_at_death, 
                                                                days_to_death,
                                                                cigarettes_per_day,
                                                                pack_years_smoked)))
-print(clinical_stats)
 
+smoker_stats <- subset(smoker_stats, select = -c(range, skew, kurtosis, se))
+png("smoker_stats.png", height = 50*nrow(smoker_stats), width = 200*ncol(smoker_stats))
+grid.table(smoker_stats)
+dev.off()
+
+## non_smoker
+non_smoker_stats <- describe(subset(non_smoker, select = c(age_at_diagnosis, 
+                                                       age_at_death, 
+                                                       days_to_death,
+                                                       cigarettes_per_day,
+                                                       pack_years_smoked)))
+
+non_smoker_stats <- subset(non_smoker_stats, select = -c(range, skew, kurtosis, se))
+png("non_smoker_stats.png", height = 50*nrow(non_smoker_stats), width = 200*ncol(non_smoker_stats))
+grid.table(non_smoker_stats)
+dev.off()
+
+## clinical
+clinical_stats <- describe(subset(clinical_cleaned, select = c(age_at_diagnosis, 
+                                                           age_at_death, 
+                                                           days_to_death,
+                                                           cigarettes_per_day,
+                                                           pack_years_smoked)))
 
 clinical_stats <- subset(clinical_stats, select = -c(range, skew, kurtosis, se))
-png("test.png", height = 800, width = 1200)
-grid.table(clinical_table)
+png("clinical_stats.png", height = 50*nrow(clinical_stats), width = 200*ncol(clinical_stats))
+grid.table(clinical_stats)
 dev.off()
-print(clinical_table)
 
 ## Create image for gene descriptive statistics
 gene_stats <- describe(subset(gene_cleaned, select = -c(gene_id, symbol, name, cytoband, type)))
