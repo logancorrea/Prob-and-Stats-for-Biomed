@@ -102,6 +102,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r Q4}
 #(there are many ways to approach this question). You can create a function that simulates the families or just sample the families n number of times
 
+# Part A:
 # set seed for reproducibility
 set.seed(1)
 
@@ -135,6 +136,9 @@ for (i in 1:n_simulations) {
 # calculate frequency of two-boy families among those that have at least one boy on Wednesday
 frequency <- two_boy / one_wednesday_boy
 cat("Frequency: ", frequency )
+
+# Part B:
+# In this approach, I generated 2 child genders with 50/50 probability and a birth day with equal probabilities. Then I checked if one of the children was a boy born on a Wednesday, and if true, I added +1 to the one_wednesday_boy count. Then if there was one boy born on Wednesday I checked if both children were boys and if true I added +1 to the two_boy count. I ran this simulation 10000 times and calculated the frequency of two-boy families among those that have at least one boy on Wednesday. The resulting frequency was 0.48, which is what we expected to see.
 ```
 
 ## Q5. 20 points
