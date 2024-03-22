@@ -225,32 +225,91 @@ print(stats_summary)
 
 ### The file anscombe.txt contains 4 different datasets constructed by Anscombe in 1973. The x and y variables are matched to each dataset (e.g., for dataset 1, x1 corresponds to y1).
 
-
-```{r Q6}
-
-# This is the dataset:
-# case x1 x2 x3 x4    y1   y2    y3    y4
-# 1    10 10 10  8  8.04 9.14  7.46  6.58
-# 2     8  8  8  8  6.95 8.14  6.77  5.76
-# 3    13 13 13  8  7.58 8.74 12.74  7.71
-# 4     9  9  9  8  8.81 8.77  7.11  8.84
-# 5    11 11 11  8  8.33 9.26  7.81  8.47
-# 6    14 14 14  8  9.96 8.10  8.84  7.04
-# 7     6  6  6  8  7.24 6.13  6.08  5.25
-# 8     4  4  4 19  4.26 3.10  5.39 12.50
-# 9    12 12 12  8 10.84 9.13  8.15  5.56
-# 10    7  7  7  8  4.82 7.26  6.42  7.91
-# 11    5  5  5  8  5.68 4.74  5.73  6.89
-
-```
-
 ### A. Use R to create a scatterplot for each dataset. In your answer, you should provide the code and clearly annotate which section of code will produce each plot. (2 points)
 ### B. Use R to run a simple linear regression for each dataset. In your answer, you should provide both the annotated code and the resulting linear function for each model.(2 points)
 ### C. Use R to generate residuals plots for each dataset. In your answer, you should provide the annotated code. (3 points)
 ### D. State the assumptions for linear regression. (3 points)
 ### E. For each model, use a few sentences to (i) describe the model, (ii) indicate if there is a problem with the model, and (iii) explain what can be done to fix it. (5 points)
 ```{r Q6}
+### Part A:
+library(ggplot2)
 
+# read txt file
+anscombe_data <- read.table("anscombe.txt", header = TRUE, sep = "")
+
+# Names of the x and y columns
+x_names <- c("x1", "x2", "x3", "x4")
+y_names <- c("y1", "y2", "y3", "y4")
+
+par(mfrow = c(2, 2))  # 2x2 layout for 4 plots
+
+# Loop through each pair of x and y columns
+for (i in 1:4) {
+  # Create plot
+  plot(anscombe_data[[x_names[i]]], anscombe_data[[y_names[i]]], 
+       main = paste("Scatterplot of", x_names[i], "vs", y_names[i]),
+       xlab = "X Values", ylab = "Y Values", pch = 19)
+  
+    # Create linear model
+  lm_model <- lm(anscombe_data[[y_names[i]]] ~ anscombe_data[[x_names[i]]], data = anscombe_data)
+  
+  # Add the regression line
+  abline(lm_model, col = "blue")
+}
+
+### Part B:
+# Loop through each pair of x and y columns
+for (i in 1:4) {
+  # Create linear model
+  lm_model <- lm(anscombe_data[[y_names[i]]] ~ anscombe_data[[x_names[i]]], data = anscombe_data)
+  
+  # Extract coefficients
+  intercept <- coef(lm_model)[1]
+  slope <- coef(lm_model)[2]
+  
+  # Print linear function
+  cat("Linear function for", x_names[i], "vs", y_names[i], ":\n")
+  cat(paste("y =", round(slope, 3), "*", x_names[i], "+", round(intercept, 3),"\n\n"))
+}
+
+### Part C:
+# Set up the plotting layout
+par(mfrow = c(2, 2))  # 2x2 layout for 4 plots
+
+# Loop through each pair of x and y columns
+for (i in 1:4) {
+  # Create linear model
+  lm_model <- lm(anscombe_data[[y_names[i]]] ~ anscombe_data[[x_names[i]]], data = anscombe_data)
+  
+  # Generate residuals
+  residuals <- residuals(lm_model)
+  
+  # Generate fitted values
+  fitted_values <- fitted(lm_model)
+  
+  # Create residual plot
+  plot(fitted_values, residuals, main = paste("Residual Plot for", x_names[i], "vs", y_names[i]),
+       xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+  
+  # Add a horizontal line at y = 0 for reference
+  abline(h = 0, col = "red")
+}
+
+### Part D:
+# Linear regression assumes that there is a linear relationship between the independent variables and the dependent variable, the observations are independent of each other, the variance of the errors is constant, the residuals are normally distributed, there is no perfect multicollinearity among the independent variables, no influential outliers exist, and there is no autocorrelation among the residuals.
+
+### Part E:
+# Model x1y1:
+# no relationship
+
+# Model x2y2:
+# non-linear
+
+# Model x3y3:
+# outlier
+
+# Model x4y4:
+# outlier
 
 ```
 
@@ -261,7 +320,19 @@ print(stats_summary)
 
 ### Assuming that the a priori probability of any message being spam is 0.5, what is the probability that an email is spam given it contains the phrase This isn't spam
 ```{r Q7}
+# Calculate probabilities
+p_phrase_given_spam <- 210 / 1000  # Probability of phrase given spam
+p_spam <- 0.5  # Prior probability of spam
+p_phrase_given_non_spam <- 23 / 1000  # Probability of phrase given non-spam
 
+# Calculate denominator for Bayes' theorem
+p_phrase <- (p_phrase_given_spam * p_spam) + (p_phrase_given_non_spam * (1 - p_spam))
+
+# Apply Bayes' theorem
+p_spam_given_phrase <- (p_phrase_given_spam * p_spam) / p_phrase
+
+# Print the result
+cat("Probability: ",p_spam_given_phrase)
 
 ```
 ## Q8. 15 points
@@ -272,8 +343,34 @@ print(stats_summary)
 
 ### B. Assume that patients are examined at random, what is the average number of patients before the first patient with cholesterol levels above than 300 (including 300) is encountered? Answer this question using one of the distributions seen in class you can confirm the answer with the R functions. (8 points)
 ```{r Q8}
+cleaveland <- read.csv("heart_cleveland_upload.csv")
 
+# Part A:
+# Calculate the number of patients with less than 50 percent diameter narrowing
+patients_less_than_50 <- sum(cleaveland$condition == 0)
 
+# Total number of patients
+total_patients <- nrow(cleaveland)
+
+# Calculate the probability of a patient having less than 50 percent diameter narrowing
+probability_less_than_50 <- patients_less_than_50 / total_patients
+
+# Calculate the probability of at least 3 out of 25 patients having less than 50% diameter narrowing
+probability_at_least_3 <- 1 - pbinom(2, size = 25, prob = probability_less_than_50)
+
+cat("Probability: ", probability_at_least_3, "\n")
+
+# Part B:
+# Calculate the probability of a patient having cholesterol levels >= 300
+patients_with_cholesterol_above_300 <- sum(cleaveland$chol >= 300)
+probability_cholesterol_above_300 <- patients_with_cholesterol_above_300 / total_patients
+
+# The mean (or expected value) for the geometric distribution
+# This is the average number of patients examined before finding one with cholesterol >= 300
+average_patients_before_success <- 1 / probability_cholesterol_above_300
+
+# Print the result
+cat("Average number of patients before the first patient with cholesterol levels above than 300: ", average_patients_before_success, "\n")
 ```
 ## Q9. 15 points
 
