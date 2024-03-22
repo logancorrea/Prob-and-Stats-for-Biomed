@@ -20,7 +20,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Due March 20th 11:59pm
+### Due March 25th 11:59pm
 
 ### As for other problem sets for this course, all answers should be submitted as a single .R file. To receive full credit for answers, make sure to (1) annotate your code, (2) use annotations to explain your reasoning, and (3) ensure that your code can be run. 
 
@@ -41,22 +41,47 @@ knitr::opts_chunk$set(echo = TRUE)
 #### If you have any questions about what is being asked or what you need to do in order to solve the problems, please reach out to a TA or instructor as soon as possible. If it is necessary to provide additional information or corrections, updated information will be posted on the HW3 Assignment page in Canvas.
 
 
-## Q1. 10 points 
+## Q1. 5 points 
 
-### Which type of predictor variables can be included in a General Regression Model (mark all possible answers)
+### Which of the following statements about multicollinearity in regression analysis is true?
 
-#### a. Logistic
+#### a. Multicollinearity occurs when the correlation between two independent variables is close to 0.
 
-#### b. Fixed
+#### b. Multicollinearity can lead to unstable coefficient estimates and inflated standard errors.
 
-#### c. Categorical
+#### c. Multicollinearity affects only the interpretation of the intercept term.
 
-#### d. continuous
+#### d. Multicollinearity is more problematic in simple linear regression than in multiple regression.
 
-#### e. Quadratic
+## Q2. 5 points 
 
+### Suppose you are building a regression model to predict housing prices. Which type of variable is “neighborhood”?
 
-## Q2. 15 points
+#### a. Continuous
+
+#### b. Ordinal
+
+#### c. Nominal
+
+#### d. Interval
+
+#### e. Mixed
+
+## Q3. 5 points 
+
+### In a logistic regression model, what does the odds ratio represent?
+
+#### a. The change in the dependent variable for a one-unit change in the independent variable.
+
+#### b. The probability of the dependent variable being 1.
+
+#### c. The ratio of the odds of success to the odds of failure.
+
+#### d. The coefficient of determination (R-squared).
+
+#### e. The absolute probability derived from the least squares function
+
+## Q4. 15 points
 
 ### Using the bayes theorem we can derive the (maybe surprising) result that in families that have 2 children along with the knowledge that at least one of the children is a boy born on a Wednesday, the probability that the family has 2 boys is 13/27 (~.48). We can test this calculation by randomly generating many “two child families” and counting the number that fulfill the criteria of (1) having a boy born on a Wednesday and (2) of these families having two boys. 
 
@@ -65,14 +90,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-```{r Q2}
+```{r Q4}
 #(there are many ways to approach this question). You can create a function that simulates the families or just sample the families n number of times
 
 
 
 ```
 
-## Q3. 20 points
+## Q5. 20 points
 
 ### Using the attached set of “datasaurus12” datasets 
 
@@ -83,23 +108,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-```{r Q3}
+```{r Q5}
 
 
 ```
 
 ------------------------------------------------------------------------
 
-## Q4. 15 points
+## Q6. 10 points
 
 ### The file anscombe.txt contains 4 different datasets constructed by Anscombe in 1973. The x and y variables are matched to each dataset (e.g., for dataset 1, x1 corresponds to y1).
 
-### A. Use R to create a scatterplot for each dataset. In your answer, you should provide the code and clearly annotate which section of code will produce each plot. (2 points)
-### B. Use R to run a simple linear regression for each dataset. In your answer, you should provide both the annotated code and the resulting linear function for each model.(2 points)
-### C. Use R to generate residuals plots for each dataset. In your answer, you should provide the annotated code. (3 points)
-### D. State the assumptions for linear regression. (3 points)
-### E. For each model, use a few sentences to (i) describe the model, (ii) indicate if there is a problem with the model, and (iii) explain what can be done to fix it. (5 points)
-```{r Q4}
+
+```{r Q6}
 
 # This is the dataset:
 # case x1 x2 x3 x4    y1   y2    y3    y4
@@ -115,21 +136,23 @@ knitr::opts_chunk$set(echo = TRUE)
 # 10    7  7  7  8  4.82 7.26  6.42  7.91
 # 11    5  5  5  8  5.68 4.74  5.73  6.89
 
-
 ```
 
-## Q5. 10 points
+### A. Use R to create a scatterplot for each dataset. In your answer, you should provide the code and clearly annotate which section of code will produce each plot. (2 points)
+### B. Use R to run a simple linear regression for each dataset. In your answer, you should provide both the annotated code and the resulting linear function for each model.(2 points)
+### C. Use R to generate residuals plots for each dataset. In your answer, you should provide the annotated code. (3 points)
+### D. State the assumptions for linear regression. (3 points)
+### E. For each model, use a few sentences to (i) describe the model, (ii) indicate if there is a problem with the model, and (iii) explain what can be done to fix it. (5 points)
+
+
+## Q7. 10 points
 
 ### we classify 2000 email in two groups: 1000 emails as spam and 1000 emails as non-spam. 210 of the spam emails contained the phrase This isn’t spam, 99 had the word prize and 110 the word prince. Of the 99 that contained the word prize, 79 also contained the word prince. On the other hand, of the 1000 non-spam emails, only 23 had the phrase this isn’t spam, 80 the word prize and 110 the word prince. Of the 80 that contained the word prize 8 also contained the word prince.
 
 
 ### Assuming that the a priori probability of any message being spam is 0.5, what is the probability that an email is spam given it contains the phrase This isn't spam
 
-```{r Q5}
-
-
-```
-## Q6. 15 points
+## Q8. 15 points
 
 ### From the Cleveland Heart Disease dataset (attached to this folder - [ https://archive.ics.uci.edu/ml/datasets/Heart+Disease ] ) 
 
@@ -137,11 +160,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### B. Assume that patients are examined at random, what is the average number of patients before the first patient with cholesterol levels above than 300 (including 300) is encountered? Answer this question using one of the distributions seen in class you can confirm the answer with the R functions. (8 points)
 
-```{r Q6}
-
-
-```
-## Q7. 15 points
+## Q9. 15 points
 
 ### From the Cleveland Heart Disease dataset:
 
@@ -151,8 +170,3 @@ knitr::opts_chunk$set(echo = TRUE)
 ### C. Calculate the mean, standard deviation, standard error, and 95% CI of the distribution of **means** from the bootstrap samples (one value for each parameter). (3 points)
 ### D. Produce a density plot of the distribution mean from the bootstraps. (3 points)
 ### E. In one of two sentences write an overall conclusion of applying the bootstrap to increase the precision to the estimation of this variable. (4 points)
-
-```{r Q7}
-
-
-```
