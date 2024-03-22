@@ -343,14 +343,14 @@ cat("Probability: ",p_spam_given_phrase)
 
 ### B. Assume that patients are examined at random, what is the average number of patients before the first patient with cholesterol levels above than 300 (including 300) is encountered? Answer this question using one of the distributions seen in class you can confirm the answer with the R functions. (8 points)
 ```{r Q8}
-cleaveland <- read.csv("heart_cleveland_upload.csv")
+cleveland <- read.csv("heart_cleveland_upload.csv")
 
-# Part A:
+### Part A:
 # Calculate the number of patients with less than 50 percent diameter narrowing
-patients_less_than_50 <- sum(cleaveland$condition == 0)
+patients_less_than_50 <- sum(cleveland$condition == 0)
 
 # Total number of patients
-total_patients <- nrow(cleaveland)
+total_patients <- nrow(cleveland)
 
 # Calculate the probability of a patient having less than 50 percent diameter narrowing
 probability_less_than_50 <- patients_less_than_50 / total_patients
@@ -360,9 +360,9 @@ probability_at_least_3 <- 1 - pbinom(2, size = 25, prob = probability_less_than_
 
 cat("Probability: ", probability_at_least_3, "\n")
 
-# Part B:
+### Part B:
 # Calculate the probability of a patient having cholesterol levels >= 300
-patients_with_cholesterol_above_300 <- sum(cleaveland$chol >= 300)
+patients_with_cholesterol_above_300 <- sum(cleveland$chol >= 300)
 probability_cholesterol_above_300 <- patients_with_cholesterol_above_300 / total_patients
 
 # The mean (or expected value) for the geometric distribution
@@ -383,6 +383,63 @@ cat("Average number of patients before the first patient with cholesterol levels
 ### D. Produce a density plot of the distribution mean from the bootstraps. (3 points)
 ### E. In one of two sentences write an overall conclusion of applying the bootstrap to increase the precision to the estimation of this variable. (4 points)
 ```{r Q9}
+### Part A:
+# Calculate the max heart rate mean
+mean_thalach <- mean(cleveland$thalach)
+
+# Calculate the max heart rate variance
+variance_thalach <- var(cleveland$thalach)
+
+### Part B:
+thalach <- cleveland$thalach
+
+# Number of bootstrap samples
+n_bootstraps <- 10000
+
+# Initialize vectors to store the results
+bootstrap_means <- numeric(n_bootstraps)
+bootstrap_medians <- numeric(n_bootstraps)
+bootstrap_variances <- numeric(n_bootstraps)
+
+# Perform the bootstrap resampling
+set.seed(1) # for reproducibility
+for (i in 1:n_bootstraps) {
+  bootstrap_sample <- sample(thalach, replace = TRUE, size = length(thalach))
+  bootstrap_means[i] <- mean(bootstrap_sample)
+  bootstrap_medians[i] <- median(bootstrap_sample)
+  bootstrap_variances[i] <- var(bootstrap_sample)
+}
+
+### Part C:
+# Calculate the mean of the bootstrap means
+mean_of_means <- mean(bootstrap_means)
+
+# Calculate the standard deviation of the bootstrap means
+sd_of_means <- sd(bootstrap_means)
+
+# Calculate the standard error of the mean
+se_of_means <- sd_of_means / sqrt(length(bootstrap_means))
+
+# Calculate the 95% confidence interval of the mean
+ci_95 <- quantile(bootstrap_means, c(0.025, 0.975))
+
+# Print the results
+cat("Mean of bootstrap means:", mean_of_means, "\n")
+cat("Standard deviation of bootstrap means:", sd_of_means, "\n")
+cat("Standard error of bootstrap means:", se_of_means, "\n")
+cat("95% CI of bootstrap means:", ci_95[1], "-", ci_95[2], "\n")
+
+### Part D:
+
+# Create a density plot for the bootstrap means
+ggplot(data.frame(BootstrapMeans = bootstrap_means), aes(x = BootstrapMeans)) +
+  geom_density(fill="blue", alpha=0.5) +
+  labs(title="Density Plot of Bootstrap Means",
+       x="Mean of Bootstrap Samples",
+       y="Density") +
+  theme_minimal()
+
+### Part E: 
 
 
 ```
