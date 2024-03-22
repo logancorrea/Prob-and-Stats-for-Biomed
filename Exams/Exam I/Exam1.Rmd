@@ -153,7 +153,49 @@ cat("Frequency: ", frequency )
 
 
 ```{r Q5}
+library(readr)
+library(dplyr)
+library(purrr)
 
+# List all CSV files in the folder
+csv_files <- list.files(path = "datasaurus12", pattern = "\\.csv$", full.names = TRUE)
+
+# Create a named list where each name is the file name without the extension
+names_list <- tools::file_path_sans_ext(basename(csv_files))
+
+# Read each CSV file into its own data frame within a named list
+data_frames_list <- setNames(lapply(csv_files, function(file) read_csv(file, show_col_types = FALSE)), names_list)
+
+# Part A:
+# Function to calculate summary statistics for each data frame
+calculate_summary <- function(df) {
+  summary <- df %>%
+    summarize(
+      x_mean = mean(x, na.rm = TRUE),
+      y_mean = mean(y, na.rm = TRUE),
+      x_sd = sd(x, na.rm = TRUE),
+      y_sd = sd(y, na.rm = TRUE),
+      pearson_correlation = cor(x, y, use = "complete.obs")
+    )
+  return(summary)
+}
+
+# Apply the function to each data frame in the list and combine the results
+summary_table <- map_df(data_frames_list, calculate_summary, .id = "Dataset")
+
+# Print the summary table
+print(summary_table)
+
+# Part B:
+# Combine data into single dataset with id as Dataset name
+combined_data <- bind_rows(data_frames_list, .id = "dataset")
+
+# Plot each dataset in facetted plot
+ggplot(combined_data, aes(x = x, y = y)) +
+  geom_point() +
+  facet_wrap(~ dataset, scales = "free") +
+  theme_minimal() +
+  labs(title = "Datasets Scatterplots", x = "X", y = "Y")
 
 ```
 
