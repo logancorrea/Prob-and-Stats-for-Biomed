@@ -52,7 +52,10 @@ knitr::opts_chunk$set(echo = TRUE)
 #### c. Multicollinearity affects only the interpretation of the intercept term.
 
 #### d. Multicollinearity is more problematic in simple linear regression than in multiple regression.
+```{r Q1}
+# b. Multicollinearity can lead to unstable coefficient estimates and inflated standard errors.
 
+```
 ## Q2. 5 points 
 
 ### Suppose you are building a regression model to predict housing prices. Which type of variable is “neighborhood”?
@@ -66,7 +69,10 @@ knitr::opts_chunk$set(echo = TRUE)
 #### d. Interval
 
 #### e. Mixed
+```{r Q2}
+# c. Nominal
 
+```
 ## Q3. 5 points 
 
 ### In a logistic regression model, what does the odds ratio represent?
@@ -80,7 +86,10 @@ knitr::opts_chunk$set(echo = TRUE)
 #### d. The coefficient of determination (R-squared).
 
 #### e. The absolute probability derived from the least squares function
+```{r Q3}
+# c. The ratio of the odds of success to the odds of failure.
 
+```
 ## Q4. 15 points
 
 ### Using the bayes theorem we can derive the (maybe surprising) result that in families that have 2 children along with the knowledge that at least one of the children is a boy born on a Wednesday, the probability that the family has 2 boys is 13/27 (~.48). We can test this calculation by randomly generating many “two child families” and counting the number that fulfill the criteria of (1) having a boy born on a Wednesday and (2) of these families having two boys. 
@@ -93,8 +102,39 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r Q4}
 #(there are many ways to approach this question). You can create a function that simulates the families or just sample the families n number of times
 
+# set seed for reproducibility
+set.seed(1)
 
+# Initialize variables
+n_simulations <- 10000
+two_boy <- 0
+one_wednesday_boy <- 0
 
+# Define possible outcomes for gender and days of the week
+genders <- c("Boy", "Girl")
+days_of_week <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+
+# Simulate 10,000 families
+for (i in 1:n_simulations) {
+  # Simulate genders for two children
+  child_genders <- sample(genders, size = 2, replace = TRUE, prob = c(0.5, 0.5))
+  
+  # Simulate birth days for two children
+  birth_days <- sample(days_of_week, size = 2, replace = TRUE)
+  
+  # Check if at least one boy was born on a Wednesday
+  if ("Wednesday" %in% birth_days[child_genders == "Boy"]) {
+    one_wednesday_boy <- one_wednesday_boy + 1
+    
+    # If there is at least one Wednesday boy, check if both are boys
+    if (all(child_genders == "Boy")) {
+      two_boy <- two_boy + 1
+    }
+  }
+}
+# calculate frequency of two-boy families among those that have at least one boy on Wednesday
+frequency <- two_boy / one_wednesday_boy
+cat("Frequency: ", frequency )
 ```
 
 ## Q5. 20 points
@@ -143,7 +183,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ### C. Use R to generate residuals plots for each dataset. In your answer, you should provide the annotated code. (3 points)
 ### D. State the assumptions for linear regression. (3 points)
 ### E. For each model, use a few sentences to (i) describe the model, (ii) indicate if there is a problem with the model, and (iii) explain what can be done to fix it. (5 points)
+```{r Q6}
 
+
+```
 
 ## Q7. 10 points
 
@@ -151,7 +194,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ### Assuming that the a priori probability of any message being spam is 0.5, what is the probability that an email is spam given it contains the phrase This isn't spam
+```{r Q7}
 
+
+```
 ## Q8. 15 points
 
 ### From the Cleveland Heart Disease dataset (attached to this folder - [ https://archive.ics.uci.edu/ml/datasets/Heart+Disease ] ) 
@@ -159,7 +205,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ### A. if we pick 25 patients randomly, find the probability that at least 3 have less than 50 percent diameter narrowing (num variable 14 in dataset state 0 - condition). Answer this question using one of the distributions seen in class you can confirm the answer with the R functions. (7 points)
 
 ### B. Assume that patients are examined at random, what is the average number of patients before the first patient with cholesterol levels above than 300 (including 300) is encountered? Answer this question using one of the distributions seen in class you can confirm the answer with the R functions. (8 points)
+```{r Q8}
 
+
+```
 ## Q9. 15 points
 
 ### From the Cleveland Heart Disease dataset:
@@ -170,3 +219,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ### C. Calculate the mean, standard deviation, standard error, and 95% CI of the distribution of **means** from the bootstrap samples (one value for each parameter). (3 points)
 ### D. Produce a density plot of the distribution mean from the bootstraps. (3 points)
 ### E. In one of two sentences write an overall conclusion of applying the bootstrap to increase the precision to the estimation of this variable. (4 points)
+```{r Q9}
+
+
+```
