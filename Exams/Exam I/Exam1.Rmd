@@ -198,7 +198,7 @@ ggplot(combined_data, aes(x = x, y = y)) +
   labs(title = "Datasets Scatterplots", x = "X", y = "Y")
 
 ### Part C:
-# Statistical parameters like mean, standard deviation, and Pearson correlation might not be sufficient to distinguish datasets from each other because they summarize data in ways that can obscure underlying patterns, distributions, or anomalies. Different datasets can have identical summary statistics but have vastly different structures, trends, or relationships when visualized.  
+# Statistical parameters like mean, standard deviation, and Pearson correlation might not be sufficient to distinguish datasets from each other because they summarize data in ways that can obscure underlying patterns or anomalies. Different datasets can have identical summary statistics but show vastly different trends when visualized.  
 
 ### Part D:
 library(e1071)
@@ -215,7 +215,7 @@ stats_summary <- imap_dfr(data_frames_list, function(df, name) {
 # Print the summary statistics
 print(stats_summary)
 
-# I found the skewness function, which is part of the e1071 library, to be useful for discriminating these 12 datasets. The skewness for these datasets varies between each set.
+# I found the skewness function, which is part of the e1071 library, to be useful for discriminating these 12 datasets. The skewness for these datasets varies between each set which allows us to distinguish between the sets.
 
 ```
 
@@ -300,16 +300,16 @@ for (i in 1:4) {
 
 ### Part E:
 # Model x1y1:
-# no relationship
+# This model fits
 
 # Model x2y2:
-# non-linear
+# This model assumes a linear relationship but it is actually cruvilinear.
 
 # Model x3y3:
-# outlier
+# This model has an outlier
 
 # Model x4y4:
-# outlier
+# This model has a single data point that influences the slope.
 
 ```
 
