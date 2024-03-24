@@ -381,7 +381,7 @@ cat("Average number of patients before the first patient with cholesterol levels
 ### B. Generate 10000 bootstraps for this variable (sample with replacement) and calculate the mean, median, and variance for each of the bootstrap samples.Just creating the object(s) that contains these values is sufficient. (3 points)
 ### C. Calculate the mean, standard deviation, standard error, and 95% CI of the distribution of **means** from the bootstrap samples (one value for each parameter). (3 points)
 ### D. Produce a density plot of the distribution mean from the bootstraps. (3 points)
-### E. In one of two sentences write an overall conclusion of applying the bootstrap to increase the precision to the estimation of this variable. (4 points)
+### E. In one or two sentences write an overall conclusion of applying the bootstrap to increase the precision to the estimation of this variable. (4 points)
 ```{r Q9}
 ### Part A:
 # Calculate the max heart rate mean
@@ -440,6 +440,6 @@ ggplot(data.frame(BootstrapMeans = bootstrap_means), aes(x = BootstrapMeans)) +
   theme_minimal()
 
 ### Part E: 
-
+# Applying bootstrap techniques significantly enhances the precision of estimating the maximum heart rate achieved during exercise by allowing for the computation of a more accurate mean, standard deviation, and confidence interval. This method effectively quantifies the uncertainty and variability of the estimate, providing a more reliable foundation for statistical inference and decision-making related to heart health assessments.
 
 ```
