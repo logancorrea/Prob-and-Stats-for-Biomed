@@ -300,16 +300,16 @@ for (i in 1:4) {
 
 ### Part E:
 # Model x1y1:
-# This model fits
+# TThis model appears to be a linear relationship with residuals constant around identity line. There doesn't appear to be anything wrong with this model.
 
 # Model x2y2:
-# This model assumes a linear relationship but it is actually cruvilinear.
+# This  plots with a logarithmic-like curve. This model assumes a linear relationship but it is actually curvilinear. Using a curvilinear regrission model would be better for this data.
 
 # Model x3y3:
-# This model has an outlier
+# This model has data plotted on what appears to a positive-sloped line with a single outlier. It appears that the outlier slightly affects the slope. You could exclude this outlier to get a better model.
 
 # Model x4y4:
-# This model has a single data point that influences the slope.
+# This model  has data plotted on a vertical line with a single outlier. The outlier has a significant influence on the slope. Exclusion of this outlier would lead to a line that is parallel to the y-axis.
 
 ```
 
