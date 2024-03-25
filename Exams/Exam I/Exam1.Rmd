@@ -434,12 +434,12 @@ cat("95% CI of bootstrap means:", ci_95[1], "-", ci_95[2], "\n")
 # Create a density plot for the bootstrap means
 ggplot(data.frame(BootstrapMeans = bootstrap_means), aes(x = BootstrapMeans)) +
   geom_density(fill="blue", alpha=0.5) +
-  labs(title="Density Plot of Bootstrap Means",
+  labs(title="Density Plot of Heart Rate Means",
        x="Mean of Bootstrap Samples",
        y="Density") +
   theme_minimal()
 
 ### Part E: 
-# Applying bootstrap techniques significantly enhances the precision of estimating the maximum heart rate achieved during exercise by allowing for the computation of a more accurate mean, standard deviation, and confidence interval. This method effectively quantifies the uncertainty and variability of the estimate, providing a more reliable foundation for statistical inference and decision-making related to heart health assessments.
+# Applying bootstrap techniques enhances the precision of estimating the maximum heart rate achieved during exercise by allowing for the computation of a more accurate mean, standard deviation, and confidence interval. This method effectively quantifies the uncertainty and variability of the estimate, providing a more reliable foundation for statistical inference and decision-making related to heart health assessments.
 
 ```
