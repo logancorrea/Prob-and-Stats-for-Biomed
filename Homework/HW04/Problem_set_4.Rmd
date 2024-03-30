@@ -87,33 +87,80 @@ for(i in 1:ncol(expectancy)) {
 library(ggplot2)
 library(readr)
 library(psych)
+library(reshape2)
 
-descriptive <- describe(expectancy)
+# Descriptive statistics for features
+descriptive <- round(describe(expectancy),2)
 
-# Plotting a histogram for each variable
+# Loop through each statistic and format to avoid scientific notation for easier readability
+for (col in names(descriptive)) {
+  if (!is.factor(descriptive[[col]])) {
+    descriptive[[col]] <- format(descriptive[[col]], scientific = FALSE)
+  }
+}
+
+# Calculate correlation matrix
+cormat <- cor(expectancy)
+melted_cormat <- melt(cormat)
+
+# Plot heat map of correlation matrix
+ggplot(data = melted_cormat, aes(Var1, Var2, fill = value, label = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, 
+                       limit = c(-1, 1), space = "Lab", name = "Pearson\nCorrelation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 8, hjust = 1)) +
+  coord_fixed() +
+  labs(title = "Correlation Heatmap")
+
+# find correlation greater than 0.7
+high_cor <- subset(melted_cormat, value > 0.7 & Var1 != Var2)
+
+# Plot a histogram for each variable
 for (var in names(expectancy)) {
-  p <- ggplot(expectancy, aes_string(x = var)) +
+  histograms <- ggplot(expectancy, aes_string(x = var)) +
     geom_histogram(bins = 30, fill = "cornflowerblue", color = "black") +
     theme_minimal() +
     ggtitle(paste("Distribution of", var))
   
-  print(p)
+  print(histograms)
 }
 
-# Many variables exhibit significant skewness, which indicates a departure from the normal distribution. Variables like infant deaths, Measles, under-five deaths, Population, and HIV/AIDS are particularly skewed, likely due to the presence of outliers or a long-tailed distribution. This skewness can affect statistical analyses, particularly those that assume a normal distribution of variables (e.g., parametric statistical tests, linear regression models).
+# Scatterplots of variables that have outliers
+ggplot(expectancy, aes(x = Life.expectancy, y = infant.deaths)) +
+  geom_point() +
+  labs(x = "Life Expectancy", y = "Infant Deaths", title = "Life Expectancy vs Infant Deaths") +
+  theme_minimal()
 
-# Collinearity, or the presence of highly correlated predictors, can be problematic, especially in regression analyses. Variables that measure similar constructs or are related (such as infant deaths and under-five deaths, or various immunization rates like Polio, Diphtheria, and Hepatitis B) may exhibit collinearity. This can inflate the variance of coefficient estimates and make it difficult to determine the individual effect of each predictor on the outcome variable.
+ggplot(expectancy, aes(x = Life.expectancy, y = Measles)) +
+  geom_point() +
+  labs(x = "Life Expectancy", y = "Measles", title = "Life Expectancy vs Measles") +
+  theme_minimal()
+
+
+# Many variables exhibit significant skewness, which indicates a departure from the normal distribution. Variables adult mortality, infant death, percentage expenditure, measles, under five deaths, HIV/AIDS, GDP, Population, are significantly skewed to the right. Variables Hepatitis B, Polio, Diphtheria, and income composition of resources are significantly skewed to the left. This skewness is likely due to the presence of outliers or a long-tailed distribution. This skewness can affect statistical analyses, particularly those that assume a normal distribution of variables. The max values for  infant deaths, Measles, and under-five deaths are significantly higher than their respective 75th percentiles, suggesting the presence of outliers.
+
+# Under five deaths and infant deaths have a high correlation (0.99), as do GDP and percentage expenditure (0.90), and schooling and income composition of resources (0.80). High correlations between independent variables can lead to multicollinearity in regression models, which might inflate the variance of the coefficient estimates and make the model less reliable.
 ```
 ## 2. Model Generation and Evaluation (Results) (35 points)
 ### Use the tools described in class to generate a linear model that best fits the data. Remember that there are different ways to evaluate and compare the models and you have to make the decisions based on the data you have. You should use the metrics, scores and diagnostic plots that help evaluate the models seen in class.
 ```{r Q2}
+# Feature selection
+features <- subset(expectancy, select = -c(under.five.deaths, percentage.expenditure, Income.composition.of.resources))
+
+# Model Building
+model <- lm(Life.expectancy ~ ., data = features)
+summary(model)
+
+par(mfrow=c(2,2))
+plot(model)
 
 
 ```
 ## 3. Analysis and Discussion (Conclusions) (35 points)
 ### Generate a short report (a paragraph or two) about the main conclusions of your analysis, including the effect of the selected independent variables on life expectancy and under what criteria you chose those variables, and what is the interpretaion of the model you selected. Also, what kind of predictions and their utility you can make from your results.
 ```{r Q3}
-
+# This statistical analysis via linear regression reveals critical determinants of life expectancy, focusing on healthcare and socio-economic factors. Significant predictors include Adult Mortality, Alcohol, Hepatitis B, Measles, BMI, Polio, Total Expenditure, Diphtheria, HIV/AIDS, and GDP, all with p-values < 0.05, indicating a statistically significant relationship with Life Expectancy at the 95% confidence level or higher. Population is not statistically significant (p-value > 0.05), suggesting its effect on life expectancy might not be a strong predictor when considering other factors in the model. With an R-squared value of approximately 80.12% and an adjusted R-squared value of approximately 80.04%, the model effectively explains the variance in life expectancy, highlighting education and healthcare as pivotal. These findings underscore the potential of targeted policies in education and healthcare to enhance life expectancy, offering a data-driven approach for prioritizing interventions and allocating resources effectively for public health improvements.
 
 ```
 
