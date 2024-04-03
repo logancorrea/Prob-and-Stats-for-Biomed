@@ -145,7 +145,8 @@ ggplot(expectancy, aes(x = Life.expectancy, y = Measles)) +
 ## 2. Model Generation and Evaluation (Results) (35 points)
 ### Use the tools described in class to generate a linear model that best fits the data. Remember that there are different ways to evaluate and compare the models and you have to make the decisions based on the data you have. You should use the metrics, scores and diagnostic plots that help evaluate the models seen in class.
 ```{r Q2}
-# Feature selection
+# Feature selection 
+# removed columns to prevent colliniearity
 features <- subset(expectancy, select = -c(under.five.deaths, percentage.expenditure, Income.composition.of.resources))
 
 # Model Building

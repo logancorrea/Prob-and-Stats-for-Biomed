@@ -1,0 +1,385 @@
+```{r load}
+part1 <- read.csv("Data3/part_1.csv", sep = "|")
+part2 <- read.csv("Data3/part_2.csv", sep = "|")
+part3 <- read.csv("Data3/part_3.csv", sep = "|")
+part4 <- read.csv("Data3/part_4.csv", sep = "|")
+part5 <- read.csv("Data3/part_5.csv", sep = "|")
+part6 <- read.csv("Data3/part_6.csv", sep = "|")
+genes <- read.table("Data/frequently-mutated-genes.2024-03-18.tsv", header = TRUE, sep = "\t", fill = TRUE, quote = "")
+```
+https://www.kaggle.com/datasets/noepinefrin/tcga-lusc-lung-cell-squamous-carcinoma-gene-exp
+
+http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/
+```{r bind}
+bigdata <- rbind(part1, part2, part3, part4, part5, part6)
+```
+
+```{r genes of interest}
+# genes of interest
+genes_interest <- genes$symbol
+
+# filter data
+data <- bigdata[bigdata$X %in% genes_interest, ]
+
+# add diagnosis 
+diagnosis_row <- bigdata[1, ] 
+data <- rbind(diagnosis_row, data)
+
+```
+
+```{r cleaning}
+# Remove duplicate rows
+data <- data[!duplicated(data[, 1]), ]
+#data <- data[1:6000, ]
+
+# Transpose data
+df <- t(data)
+
+# Convert to data frame
+df <- as.data.frame(df)
+
+# Set column names
+colnames(df) <- as.character(unlist(df[1, ]))
+df <- df[-1, ]
+
+# Drop ID Column
+rownames(df) <- NULL
+
+# convert to numeric
+df[, -1] <- lapply(df[, -1], as.numeric)
+
+# Impute NA with 0 since there are very few
+df[is.na(df)] <- 0
+
+# convert diagnosis to numeric
+df$Diagnosis <- ifelse(df$Diagnosis == "normal", 0, 1)
+
+# Calculate the sum of each column
+column_sums <- colSums(df)
+
+# Identify columns with sum not equal to zero
+nonzero_columns <- which(column_sums != 0)
+
+# Subset the dataframe to include only columns with sum not equal to zero
+df <- df[, nonzero_columns, drop = FALSE]
+
+# Convert diagnosis to a factor for easier subsetting
+df$Diagnosis <- factor(df$Diagnosis)
+
+
+```
+
+```{r row naming }
+
+combinedData <- subset(df)
+
+# Split data into two groups based on Diagnosis
+normalData <- subset(df, Diagnosis == 0)
+tumorData <- subset(df, Diagnosis == 1)
+
+set_row_names <- function(df) {
+    # Initialize counters for normal and tumor rows
+    normal_count <- 0
+    tumor_count <- 0
+
+    # Iterate through the diagnosis column to count normal and tumor rows
+    for (i in 1:nrow(df)) {
+        if (df$Diagnosis[i] == 0) {
+            normal_count <- normal_count + 1
+            row.names(df)[i] <- paste("N", normal_count, sep="_")
+        } else if (df$Diagnosis[i] == 1) {
+            tumor_count <- tumor_count + 1
+            row.names(df)[i] <- paste("T", tumor_count, sep="_")
+        }
+    }
+    return(df)
+}
+
+# Call the function with your dataframe
+combinedData <- set_row_names(combinedData)
+normalData <- set_row_names(normalData)
+tumorData <- set_row_names(tumorData)
+
+# remove original diagnosis column
+combinedData <- combinedData[, -which(names(combinedData) == "Diagnosis")]
+normalData <- normalData[, -which(names(normalData) == "Diagnosis")]
+tumorData <- tumorData[, -which(names(tumorData) == "Diagnosis")]
+```
+
+```{r log2 and pValues}
+
+# Initialize vectors to store results
+log2FC <- numeric(ncol(df) - 1)  # Subtract 1 to exclude the Diagnosis column
+pValues <- numeric(ncol(df) - 1)
+
+for (i in 1:(ncol(df) - 1)) {
+  geneExpressionNormal <- normalData[,i]
+  geneExpressionTumor <- tumorData[,i]
+  
+  # Calculate log2 Fold Change (tumor vs normal)
+  log2FC[i] <- log2(mean(geneExpressionTumor) / mean(geneExpressionNormal))
+  
+  # Calculate p-value using Welch's t-test
+  pValues[i] <- t.test(geneExpressionTumor, geneExpressionNormal)$p.value
+}
+
+# Create a data frame to store results
+results <- data.frame(
+  Gene = colnames(df)[-1],  # Exclude the Diagnosis column
+  Log2FoldChange = log2FC,
+  PValue = pValues
+)
+```
+
+```{r volcano plot}
+library(ggplot2)
+
+# Convert p-values to -log10(p-value) for plotting
+results$NegLogPValue <- -log10(results$PValue)
+
+# Define up-regulated and down regulated genes
+results$ChangeCategory <- with(results,
+                               ifelse(PValue < 0.05 & Log2FoldChange > 1.5, "Upregulated",
+                                      ifelse(PValue < 0.05 & Log2FoldChange < -1.5, "Downregulated", "Nonsignificant")))
+
+# Define genes of interest
+results$IsInterest <- ifelse(results$Gene %in% genes_interest, "Yes", "No")
+
+# Create the volcano plot
+volcanoPlot <- ggplot(results, aes(x=Log2FoldChange, y=NegLogPValue, color=ChangeCategory)) +
+  geom_point(alpha=0.5) +
+  scale_color_manual(values=c("Upregulated"="red4", "Downregulated"="royalblue4", "Nonsignificant"="grey")) +
+  labs(x="Log2 Fold Change", y="-Log10 P-value", title="Volcano Plot of Gene Expression") +
+  theme_minimal() +
+  geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "black") +  # Significance threshold line
+  theme(legend.title=element_blank(), legend.position="right")  # Customize legend
+
+volcanoPlot <- volcanoPlot + 
+  geom_vline(xintercept = -1.5, linetype = "dashed", color = "black") +
+  geom_vline(xintercept = 1.5, linetype = "dashed", color = "black")
+
+# Add labels to genes of interest
+volcanoPlot <- volcanoPlot + geom_text(data=subset(results, IsInterest == "Yes"), aes(label=Gene), vjust=-0.5, hjust=0.5, check_overlap = TRUE, size=3, color="black")
+
+# Print the plot
+print(volcanoPlot)
+```
+
+```{r filter and scale for boxplot}
+# filter for significant genes. p-value <0.05 and absolute value of fold change >1.5
+result_mask <- subset(results, PValue < 0.05 & abs(Log2FoldChange) > 1.5)
+
+# filter data
+filtered <- df[, c("Diagnosis", intersect(colnames(df), result_mask$Gene))]
+filtered <- as.data.frame(lapply(filtered, as.numeric))
+filtered$Diagnosis <- ifelse(filtered$Diagnosis == 1, 0, ifelse(filtered$Diagnosis == 2, 1, filtered$Diagnosis))
+
+# remove outliers from filtered data
+# These outliers were identified after PCA
+filtered <- filtered[-97, , drop = FALSE] # 97
+filtered <- filtered[-129, , drop = FALSE] # 128
+filtered <- filtered[-121, , drop = FALSE] # 123
+filtered <- filtered[-426, , drop = FALSE] # 429
+filtered <- filtered[-476, , drop = FALSE] # 480
+
+# filter normal
+filteredNormal <- filtered[filtered$Diagnosis == 0, ]
+filteredNormal <- filteredNormal[, -1]
+filteredNormal <- as.data.frame(lapply(filteredNormal, as.numeric))
+
+# filter tumor
+filteredTumor <- filtered[filtered$Diagnosis == 1, ]
+filteredTumor <- filteredTumor[,-1]
+filteredTumor <- as.data.frame(lapply(filteredTumor, as.numeric))
+
+```
+
+```{r boxplot}
+
+# Scale data
+scaled <- scale(filtered[, -1])
+
+scaledNormal <- scale(filteredNormal)
+scaledNormal <- replace(scaledNormal, is.na(scaledNormal), 0)
+
+scaledTumor <- scale(filteredTumor)
+
+# Function to add labels to genes with highest expression
+add_labels_highest_expression <- function(data, num_labels) {
+  highest_genes <- colnames(data)[order(apply(data, 2, max), decreasing = TRUE)[1:num_labels]]
+  for (gene in highest_genes) {
+    expression_value <- max(data[, gene])
+    text(which(colnames(data) == gene), expression_value, gene, pos = 1, col = "firebrick3", cex = 1)
+  }
+}
+
+
+# Plot boxplot for normalData expression
+boxplot(scaledNormal, outline = TRUE, main = "Normal Gene Expression")
+add_labels_highest_expression(scaledNormal, 3)
+
+# Plot boxplot for tumorData expression
+boxplot(scaledTumor, outline = TRUE, main = "Tumor Gene Expression")
+add_labels_highest_expression(scaledTumor, 3)
+
+```
+
+https://www.youtube.com/watch?v=ht1r34-ifVI
+https://igordot.github.io/tutorials/heatmaps-2017-07.nb.html
+
+```{r scale for heatmaps}
+library(tidyverse)
+library(magrittr)
+library(pheatmap)
+library(RColorBrewer)
+library(rio)
+library(dplyr)
+
+# filter for heatmap
+gene_mask <- result_mask$Gene
+
+m_normalData <- normalData[, colnames(normalData) %in% gene_mask]
+m_tumorData <- tumorData[, colnames(tumorData) %in% gene_mask]
+m_combinedData <- combinedData[, colnames(combinedData) %in% gene_mask]
+
+# transpose
+t_normalData <- as.data.frame(t(m_normalData))
+t_tumorData <- as.data.frame(t(m_tumorData))
+t_combinedData <- as.data.frame(t(m_combinedData))
+
+# scale data
+normal_log2 = log2(t_normalData + 1)
+tumor_log2 = log2(t_tumorData + 1)
+combined_log2 = log2(t_combinedData +1)
+
+# Check for rows with constant values and exclude constant rows
+remove_constant_rows <- function(data) {
+  constant_rows <- apply(data, 1, function(x) all(x == x[1]))
+  filtered_data <- data[!constant_rows, ]
+  return(filtered_data)
+}
+
+normal_log2 <- remove_constant_rows(normal_log2)
+tumor_log2 <- remove_constant_rows(tumor_log2)
+combined_log2 <- remove_constant_rows(combined_log2)
+
+# Set seed for reproducibility
+set.seed(123)
+
+# random patients
+tumor_random_patients = sample(colnames(t_tumorData), 50)
+combined_random_patients <- c(sample(colnames(t_normalData), 25), sample(colnames(t_tumorData), 25))
+
+# random genes
+#random_genes = sample(rownames(t_normalData), 10)
+
+# top genes
+top_genes = result_mask %>% arrange(`PValue`) %>% head(20) %$% Gene
+```
+
+```{r heatmaps}
+# colors
+my_colors = rev(brewer.pal(n = 11, name = "RdBu"))
+
+# ovearll heat map
+pheatmap(combined_log2[top_genes, combined_random_patients], 
+         scale = "row", 
+         cluster_rows = FALSE,
+         color = my_colors,
+         main = "Heatmap of Gene Expression",
+         xlabel = "Random Samples",
+         ylabel = "Genes",
+         legend_breaks = c(-2, 2),
+         legend_labels = c("Downregulated", "Upregulated"))
+
+```
+
+
+```{r pca}
+library(factoextra)
+
+# create filtered pca dataframe
+pca_df <- data.frame(scaled)
+
+pca_groups <- data.frame(Diagnosis = filtered$Diagnosis)
+
+# perform pca
+pca_result <- prcomp(pca_df, scale. = FALSE)
+
+# Examine the summary of PCA result to decide on the number of components
+#summary(pca_result)
+
+# Select the Number of Principal Components
+cumulative_var <- cumsum(pca_result$sdev^2) / sum(pca_result$sdev^2)
+
+# Select components explaining at least 90% variance
+#num_components <- which.max(cumulative_var >= 0.8)  
+#print(num_components)
+
+# Extract a number of principal components, for example, the first two
+num_components <- 2  # Adjust based on your analysis
+pc_scores <- data.frame(pca_result$x[, 1:num_components])
+
+# Add the Diagnosis back to the principal components dataframe and convert to factor
+pc_scores <- cbind(pca_groups, pc_scores)
+pc_scores$Diagnosis <- as.factor(pc_scores$Diagnosis)
+pc_scores <- as.data.frame(pc_scores)
+
+# Plot variance explained by each principal component to aid decision
+#plot(pca_result, type = "l")
+```
+
+
+```{r pca graphs}
+library("GGally")
+
+# Extract the first 4 principal components
+pca_subset <- pca_result$x[, 1:4]
+
+# Assuming pca_subset is a matrix
+pca_subset <- as.data.frame(pca_subset)
+
+# Add diagnosis column to pca_subset
+pca_subset$Diagnosis <- factor(pca_groups$Diagnosis, levels = c(0, 1), labels = c("normal", "tumor"))
+
+# Visualize pair plot with hue as diagnosis using ggpairs function
+#ggpairs(pca_subset, aes(color = Diagnosis)) +
+  #scale_color_manual(values = c("coral2", "cyan3"))
+
+# PCA1 vs PCA2
+fviz_pca_ind(pca_result,
+             geom.ind = "point",            # Show points only
+             col.ind = factor(pca_subset$Diagnosis, levels = unique(pca_subset$Diagnosis)),  # Color by groups
+             palette = c("steelblue2", "firebrick3"),
+             addEllipses = TRUE,           # Concentration ellipses
+             legend.title = "Groups",
+             title = "PC1 vs PC2",
+             col.lab = c("normal" = "steelblue2", "tumor" = "firebrick3"))
+
+```
+
+
+```{r logistic regression}
+
+# Perform logistic regression using the principal components
+lg_model <- glm(Diagnosis ~ ., data = pc_scores, family = "binomial")
+
+lg_reduced <- glm(Diagnosis ~ PC1, data = pc_scores, family = "binomial")
+
+# compare reduced with full model
+anova(lg_reduced, lg_model, test = "LRT")
+
+# the p-value is > 0.05. 
+# Therefore, we fail to reject the null hypothesis, suggesting that using 1 PCA component rather than 2 significantly improves the fit.
+
+# Check the summary of the model
+summary(lg_reduced)
+
+# OR for PC1
+exp(coef(lg_model)["PC1"])
+
+# The p-value is <0.05 so we conclude that PC1 gene expression is significantly associated with the presence of tumor.
+# the odds of developing a tumor from PC1 gene expression is 3.5 times that of non-expression
+
+plot(lg_reduced)
+```
