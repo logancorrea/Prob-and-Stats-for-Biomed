@@ -359,7 +359,7 @@ fviz_pca_ind(pca_result,
 ```
 
 
-```{r logistic regression}
+```{r PCA regression model}
 
 # Perform logistic regression using the principal components
 lg_model <- glm(Diagnosis ~ ., data = pc_scores, family = "binomial")
@@ -381,5 +381,43 @@ exp(coef(lg_model)["PC1"])
 # The p-value is <0.05 so we conclude that PC1 gene expression is significantly associated with the presence of tumor.
 # the odds of developing a tumor from PC1 gene expression is 3.5 times that of non-expression
 
+par(mfrow = c(2, 2))
 plot(lg_reduced)
 ```
+
+```{r top genes regression model}
+top_test <- as.data.frame(scaled[, top_genes, drop = FALSE])
+top_test <- top_test[, 1:10, drop = FALSE]
+top_test <- cbind(top_test, filtered$Diagnosis)
+colnames(top_test)[ncol(top_test)] <- "Diagnosis"
+
+# Perform logistic regression using the principal components
+test_model <- glm(Diagnosis ~ ., data = top_test, family = "binomial")
+summary(test_model)
+
+test_reduced <- glm(Diagnosis ~ BUB1B, data = top_test, family = "binomial")
+
+# compare reduced with full model
+anova(test_reduced, test_model, test = "LRT")
+
+# the p-value is > 0.05. 
+# Therefore, we fail to reject the null hypothesis, suggesting that using 1 PCA component rather than 2 significantly improves the fit.
+
+# Check the summary of the model
+summary(test_model)
+
+# OR for PC1
+exp(coef(test_model)["PC1"])
+
+# The p-value is <0.05 so we conclude that PC1 gene expression is significantly associated with the presence of tumor.
+# the odds of developing a tumor from PC1 gene expression is 3.5 times that of non-expression
+par(mfrow = c(2, 2))
+plot(test_model)
+
+
+# compare models
+anova(test_model, lg_reduced, test = "LRT")
+
+# PCA model better
+```
+
