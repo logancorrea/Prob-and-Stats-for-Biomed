@@ -1,5 +1,5 @@
 ```{r file split}
-# The source file is larger than github max so we're going to split it into equal parts then join later in R
+# The source file is larger than github max so I split it into equal parts then join later in R
 # https://www.kaggle.com/datasets/noepinefrin/tcga-lusc-lung-cell-squamous-carcinoma-gene-exp?resource=download
 
 # Read the CSV file
@@ -158,7 +158,7 @@ results$NegLogPValue <- -log10(results$PValue)
 # Define up-regulated and down regulated genes
 results$ChangeCategory <- with(results,
                                ifelse(PValue < 0.05 & Log2FoldChange > 1.5, "Upregulated",
-                                      ifelse(PValue < 0.05 & Log2FoldChange < -1.5, "Downregulated", "Nonsignificant")))
+                                      ifelse(PValue < 0.05 & Log2FoldChange < -1.5, "Downregulated", "Normal Regulation")))
 
 # Define genes of interest
 results$IsInterest <- ifelse(results$Gene %in% genes_interest, "Yes", "No")
@@ -166,7 +166,7 @@ results$IsInterest <- ifelse(results$Gene %in% genes_interest, "Yes", "No")
 # Create the volcano plot
 volcanoPlot <- ggplot(results, aes(x=Log2FoldChange, y=NegLogPValue, color=ChangeCategory)) +
   geom_point(alpha=0.5) +
-  scale_color_manual(values=c("Upregulated"="red4", "Downregulated"="royalblue4", "Nonsignificant"="grey")) +
+  scale_color_manual(values=c("Upregulated"="red4", "Downregulated"="royalblue4", "Normal Regulation"="grey")) +
   labs(x="Log2 Fold Change", y="-Log10 P-value", title="Volcano Plot of Gene Expression") +
   theme_minimal() +
   geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "black") +  # Significance threshold line
@@ -181,8 +181,20 @@ volcanoPlot <- volcanoPlot + geom_text(data=subset(results, IsInterest == "Yes")
 
 # Print the plot
 print(volcanoPlot)
+
+# Calculate the percentage of genes in each category
+downregulated_percent <- 100 * sum(results$ChangeCategory == "Downregulated") / nrow(results)
+upregulated_percent <- 100 * sum(results$ChangeCategory == "Upregulated") / nrow(results)
+normal_percent <- 100 * sum(results$ChangeCategory == "Normal Regulation") / nrow(results)
+
+# Print the percentages
+print(paste("Percentage of downregulated genes:", round(downregulated_percent, 2), "%"))
+print(paste("Percentage of upregulated genes:", round(upregulated_percent, 2), "%"))
+print(paste("Percentage of genes with normal regulation:", round(normal_percent, 2), "%"))
+
+
 ```
-```{r filter and scale for boxplot}
+```{r filter and scale}
 # filter for significant genes. p-value <0.05 and absolute value of fold change >1.5
 result_mask <- subset(results, PValue < 0.05 & abs(Log2FoldChange) > 1.5)
 
@@ -202,10 +214,6 @@ filteredTumor <- filtered[filtered$Diagnosis == 1, ]
 filteredTumor <- filteredTumor[,-1]
 filteredTumor <- as.data.frame(lapply(filteredTumor, as.numeric))
 
-```
-
-```{r boxplot}
-
 # Scale data
 scaled <- log2((filtered[,-1])+1)
 scaled <- scale(scaled)
@@ -216,38 +224,9 @@ scaledNormal <- replace(scaledNormal, is.na(scaledNormal), 0)
 
 scaledTumor <- log2(filteredTumor+1)
 scaledTumor <- scale(scaledTumor)
-
-# Function to add labels to genes with highest expression
-add_labels_highest_expression <- function(data, num_labels) {
-  highest_genes <- colnames(data)[order(apply(data, 2, max), decreasing = TRUE)[1:num_labels]]
-  for (gene in highest_genes) {
-    expression_value <- max(data[, gene])
-    text(which(colnames(data) == gene), expression_value, gene, pos = 1, col = "firebrick3", cex = 1)
-  }
-}
-
-
-# Set up the layout for the plots
-par(mfrow = c(1, 2))
-
-# Plot boxplot for normalData expression
-boxplot(scaledNormal, 
-        outline = TRUE,
-        main = "Normal Gene Expression",
-        ylab = "Expression",
-        xlab = "Genes")
-
-
-# Plot boxplot for tumorData expression
-boxplot(scaledTumor,
-        outline = TRUE, 
-        main = "Tumor Gene Expression",
-        ylab = "Expression",
-        xlab = "Genes")
-#add_labels_highest_expression(scaledTumor, 1)
-
-
 ```
+
+
 ```{r identify and remove outliers}
 
 # Flatten the dataframe into a single vector
@@ -277,13 +256,26 @@ scaled <- scaled[-rows_to_remove, ]
 par(mfrow = c(1, 2))
 
 # Flatten the dataframe into a single vector
-dv1 <- as.vector(unlist(filtered))
+dv1 <- as.vector(unlist(filtered[,-1]))
 dv2 <- as.vector(unlist(scaled))
 
 # Plot histogram of unscaled data
 hist(dv1, main = "Raw Expression", xlab = "Expression", breaks = 100)
 hist(dv2, main = "Transformed and Scaled", xlab = "Expression", breaks = 100)
 
+```
+```{r raw and scaled descriptive statistics}
+library(psych)
+
+# descriptive statistics
+raw_stats <- describe(dv1)
+scaled_stats <- describe(dv2)
+
+# Join
+combined_stats <- rbind(raw_stats, scaled_stats)
+rownames(combined_stats) <- c("raw", "scaled")
+
+print(combined_stats)
 ```
 
 ```{r scale for heatmaps}
@@ -364,6 +356,25 @@ pca_groups <- data.frame(Diagnosis = filtered$Diagnosis)
 pca_groups <- as.data.frame(pca_groups[-rows_to_remove, ])
 colnames(pca_groups)[1] <- "Diagnosis"
 
+# Compute the covariance matrix
+covariance_matrix <- cov(pca_df)
+
+# Identify collinear variables
+threshold <- 0.9  
+collinear_variables <- list()
+for (i in 1:(ncol(covariance_matrix) - 1)) {
+  for (j in (i + 1):ncol(covariance_matrix)) {
+    if (abs(covariance_matrix[i, j]) > threshold) {
+      collinear_variables[[length(collinear_variables) + 1]] <- c(colnames(pca_df)[i], colnames(pca_df)[j])
+    }
+  }
+}
+
+# remove collinear columns
+# Loop through the list of collinear variables and remove the first variable from pca_df
+for (collinear_pair in collinear_variables) {
+  pca_df <- pca_df[, !(colnames(pca_df) %in% collinear_pair[1])]
+}
 
 # perform pca
 pca_result <- prcomp(pca_df, scale. = FALSE)
@@ -406,7 +417,7 @@ fviz_pca_ind(pca_result,
              palette = c("steelblue2", "firebrick3"),
              addEllipses = TRUE,           # Concentration ellipses
              legend.title = "Groups",
-             title = "PC1 vs PC2",
+             title = "PCA Clusters",
              col.lab = c("normal" = "steelblue2", "tumor" = "firebrick3"))
 
 ```
