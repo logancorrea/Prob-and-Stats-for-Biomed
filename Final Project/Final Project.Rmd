@@ -432,7 +432,7 @@ summary(lg_reduced)
 exp(coef(lg_reduced)["PC1"])
 
 # The p-value is <0.05 so we conclude that PC1 gene expression is significantly associated with the presence of tumor.
-# the odds of developing a tumor from PC1 gene expression is 2.95 times that of non-expression.
+# the odds of developing a tumor from PC1 gene expression is 2.3 times that of non-expression.
 
 par(mfrow = c(2, 2))
 plot(lg_reduced)
