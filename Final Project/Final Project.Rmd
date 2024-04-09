@@ -227,6 +227,8 @@ add_labels_highest_expression <- function(data, num_labels) {
 }
 
 
+# Set up the layout for the plots
+par(mfrow = c(1, 2))
 
 # Plot boxplot for normalData expression
 boxplot(scaledNormal, 
@@ -247,6 +249,7 @@ boxplot(scaledTumor,
 
 ```
 ```{r identify and remove outliers}
+
 # Flatten the dataframe into a single vector
 data_vector <- as.vector(unlist(scaled))
 
@@ -270,11 +273,16 @@ rows_to_remove <- which(apply(scaled, 1, function(row) any(row > upper_bound)))
 # Remove identified rows from the dataframe
 scaled <- scaled[-rows_to_remove, ]
 
+# Set up the layout for the plots
+par(mfrow = c(1, 2))
+
 # Flatten the dataframe into a single vector
+dv1 <- as.vector(unlist(filtered))
 dv2 <- as.vector(unlist(scaled))
 
 # Plot histogram of unscaled data
-hist(dv2, main = "Scaled Expression", xlab = "Expression", breaks = 100)
+hist(dv1, main = "Raw Expression", xlab = "Expression", breaks = 100)
+hist(dv2, main = "Transformed and Scaled", xlab = "Expression", breaks = 100)
 
 ```
 
