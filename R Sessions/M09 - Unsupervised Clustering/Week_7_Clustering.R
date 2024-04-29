@@ -1,0 +1,452 @@
+setwd("//Users/javier/Documents/Jupyter/MBIO_6490_2023/R_Sessions/Week_5_Clustering/")
+
+library(RColorBrewer)
+library(gplots)
+library(Rtsne)
+library(tidyverse)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra)
+
+##Read Dataset
+br_cancer = read.csv("Breast_Cancer.csv")
+
+##First Observations
+head(br_cancer)
+
+#Subset to only the numerical variables to evaluate
+PCA_dat = br_cancer[,c(3:32)]
+
+##Proportion of diagnosis
+table(br_cancer$diagnosis)
+
+##Check for linearity and correlation among variables
+
+##library("PerformanceAnalytics")
+cor_dat = cor(PCA_dat)
+corrplot::corrplot(cor_dat, method="number",type="upper",tl.cex	=0.3,cl.cex=0.5,number.cex=0.5)
+
+##This function creates a new dataframe with all of the pairwise correlations for sorting and evaluating
+pairwiseCor <- function(dataframe){
+  pairs <- combn(names(dataframe), 2, simplify=FALSE)
+  df <- data.frame(Vairable1=rep(0,length(pairs)), Variable2=rep(0,length(pairs)), 
+                   AbsCor=rep(0,length(pairs)), Cor=rep(0,length(pairs)))
+  for(i in 1:length(pairs)){
+    df[i,1] <- pairs[[i]][1]
+    df[i,2] <- pairs[[i]][2]
+    df[i,3] <- round(abs(cor(dataframe[,pairs[[i]][1]], dataframe[,pairs[[i]][2]])),4)
+    df[i,4] <- round(cor(dataframe[,pairs[[i]][1]], dataframe[,pairs[[i]][2]]),4)
+  }
+  pairwiseCorDF <- df
+  pairwiseCorDF <- pairwiseCorDF[order(pairwiseCorDF$AbsCor, decreasing=TRUE),]
+  row.names(pairwiseCorDF) <- 1:length(pairs)
+  pairwiseCorDF <<- pairwiseCorDF
+  pairwiseCorDF
+}
+
+pairDF_cor =  pairwiseCor(PCA_dat)
+
+##from this list we see some Highly correlated variables
+
+
+###How about other metrics VIF?
+
+sort(faraway::vif(br_cancer[,c(3:32)]),decreasing = T)
+
+####Let's remove the top 2
+to_remove_collinear = c("radius_mean", "perimeter_mean" )
+
+PCA_dat_Model2 = PCA_dat[,!names(PCA_dat) %in% to_remove_collinear]
+
+#########PCA#########
+##Using the prcomp function
+pc <- prcomp(PCA_dat,
+             center = TRUE,
+             scale. = TRUE)
+
+attributes(pc)
+
+#display principal components
+summary(pc)
+
+print(pc)
+
+##See loadings 
+pc$rotation
+
+##scree plot
+
+variance = pc$sdev^2 / sum(pc$sdev^2)
+variance
+
+cumsum(variance)       
+
+###
+qplot(c(1:30), variance) +
+  geom_line(size = 2, col = "forestgreen") +
+  geom_col(alpha = 0.75) +
+  geom_point(size=2)+
+  geom_text(aes(label = round(variance,3)),vjust = -0.3, hjust = -0.5,colour = "salmon") +
+  xlab("Principal Component") +
+  ylab("Variance Explained") +
+  ggtitle("Scree Plot Breast Cancer Diagnosis PCA") +
+  ylim(0, 0.6) + 
+  theme_bw()
+
+                               
+###Plot PC1 and PC2
+PCA_data = as.data.frame(pc$x)
+PCA_data$group <- br_cancer$diagnosis
+
+ggplot(PCA_data,aes(x=PC1,y=PC2,color=factor(group) ))+
+  geom_point()+
+  labs(title="Breast Cancer Diagnosis")+
+  theme_bw()
+
+##What is this telling us regarding the ammount of information on these 2 PCs
+ggplot(PCA_data,aes(x=PC2,y=PC3,color=factor(group) ))+
+  geom_point()+
+  labs(title="Breast Cancer Diagnosis")+
+  theme_bw()
+
+
+###Let's study the loadings for the first 3 PCs
+
+sort(abs(pc$rotation[,1]),decreasing = T) ##Dominated by different concavity variables -- Are these collinear variables?
+sort(abs(pc$rotation[,2]),decreasing = T) ##Fractal dimension
+sort(abs(pc$rotation[,3]),decreasing = T) ##Texture and Smoothness
+
+mean(ifelse(pairDF_cor$Vairable1 =="perimeter_mean" | 
+              pairDF_cor$Variable2 == "perimeter_mean", pairDF_cor$Cor, NA),na.rm = T)
+
+mean(ifelse(pairDF_cor$Vairable1 =="radius_mean" | 
+              pairDF_cor$Variable2 == "radius_mean", pairDF_cor$Cor, NA),na.rm = T)
+
+col_names = unique(pairDF_cor$Variable2)
+col_names = c(col_names,"radius_mean")
+mean_cols = vector()
+for (i in 1:length(col_names)){
+  mean_cols[i] = mean(ifelse(pairDF_cor$Vairable1 ==col_names[i] | 
+                pairDF_cor$Variable2 == col_names[i], pairDF_cor$Cor, NA),na.rm = T)
+}
+
+names(mean_cols) = col_names
+sort(mean_cols)
+# ###Biplot
+# library(devtools)
+# #install_github("vqv/ggbiplot")
+# library(ggbiplot)
+# g <- ggbiplot(pc,
+#               obs.scale = 1,
+#               var.scale = 1,
+#               groups = as.factor(br_cancer$diagnosis),
+#               ellipse = TRUE,
+#               circle = TRUE,
+#               ellipse.prob = 0.90)
+# g <- g + scale_color_discrete(name = '')
+# g <- g + theme(legend.direction = 'horizontal',
+#                legend.position = 'top')
+# 
+# print(g)
+
+##Heatmap -- Scale
+x_Full <- as.matrix(PCA_dat)
+x_Full = scale(x_Full)
+colnames(x_Full) = colnames(PCA_dat)
+dim(x_Full)
+
+##Create palette
+library(RColorBrewer)
+library(gplots)
+##Create color palettes
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+clustcol.height = c("#F87766","#7CAE00")
+
+
+##Heatmap
+heatmap.2(x_Full,dendrogram="both",distfun = function(x) dist(x,method = 'euclidean'),
+          density.info = "none",
+          hclustfun = function(x) hclust(x,method = 'ward.D'),cexCol=1,tracecol=NA,
+          cexRow = 0.5,
+          col=rev(colfunc(15)),margins = c(12,4),
+          RowSideColors = clustcol.height[as.factor(br_cancer$diagnosis)],
+          key=FALSE,lhei =c(2,8))
+
+###tsne
+
+library(Rtsne)
+
+## Run the t-SNE algorithm and store the results into an object called tsne_results
+tsne_results <- Rtsne(PCA_dat, perplexity=20) # You can change the value of perplexity and see how the plot changes
+
+## Generate the t_SNE plot
+plot(tsne_results$Y, col = as.factor(br_cancer$diagnosis), pch = 19, cex = 1.5) # Plotting the first image
+
+
+###We can use the most informative PCs from the PCA we performed above to see if we can cluster our data better
+## Run the t-SNE algorithm and store the results into an object called tsne_results
+tsne_results_PCA <- Rtsne(pc$x[,1:3], perplexity=50) # You can change the value of perplexity and see how the plot changes
+
+## Generate the t_SNE plot
+plot(tsne_results_PCA$Y, col = as.factor(br_cancer$diagnosis), pch = 19, cex = 1.5) # Plotting the first image
+
+
+
+########K-Means###########
+
+library(tidyverse)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra)
+
+###use the function kmeans to cut the clusters ##How many clusters???
+k2 <- kmeans(PCA_dat, centers = 2, nstart = 25)
+
+##Visualize the clusters using the same cancer data
+fviz_cluster(k2, data = PCA_dat)
+
+##We can also generate scatterplots of bivariate comparisons and clustering based on the kmeans
+PCA_dat %>%
+  as_tibble() %>%
+  mutate(cluster = k2$cluster) %>%
+  ggplot(aes(concavity_mean, radius_mean, color = factor(cluster))) +
+  geom_point()
+
+###Confusion Matrix
+table(br_cancer$diagnosis, k2$cluster)
+
+
+# function to compute total within-cluster sum of square 
+
+set.seed(123)
+fviz_nbclust(PCA_dat, kmeans, method = "wss")
+
+# Average Silouette Method
+fviz_nbclust(PCA_dat, kmeans, method = "silhouette")
+
+##mean statistics by cluster for each variable
+PCA_dat %>% 
+  mutate(Cluster = k2$cluster) %>% 
+  group_by(Cluster) %>% 
+  summarise_all("mean")
+
+
+##How about using the PCA instead of the raw data?? Let's use the 10 first PCs from the PCA
+
+k4_PCA <- kmeans(pc$x[,1:10], centers = 2, nstart = 25)
+
+##Visualize the clusters using the same cancer data
+fviz_cluster(k4_PCA, data = PCA_dat)
+
+##We can also generate scatterplots of bivariate comparisons and clustering based on the kmeans
+PCA_dat %>%
+  as_tibble() %>%
+  mutate(cluster = k4_PCA$cluster) %>%
+  ggplot(aes(concavity_mean, smoothness_worst, color = factor(cluster))) +
+  geom_point()
+
+###Confusion Matrix
+table(br_cancer$diagnosis, k4_PCA$cluster)
+
+# function to compute total within-cluster sum of square 
+
+set.seed(123)
+fviz_nbclust(PCA_dat, kmeans, method = "wss")
+fviz_nbclust(PCA_dat, kmeans, method = "silhouette")
+
+##tsne using the PCA and K-means output
+set.seed(123)
+tsne_results_Kmeans <- Rtsne(PCA_dat, perplexity=40, check_duplicates = FALSE) # You can change the value of perplexity and see how the plot changes
+
+plot(tsne_results_Kmeans$Y, col = as.factor(PCA_data$group), pch = 19, cex = 1.5) # Plotting the first image
+
+
+tsne_results_PCA <- Rtsne(pc$x[,1:10], perplexity=30, check_duplicates = FALSE) # You can change the value of perplexity and see how the plot changes
+
+plot(tsne_results_PCA$Y, col = as.factor(k4_PCA$cluster), pch = 19, cex = 1.5) # Plotting the first image
+
+##How about other clusters size, would I get any important insights, try with 4??
+
+
+#######Hierarchical clustering#######
+
+# Dissimilarity matrix
+d <- dist(PCA_dat, method = "euclidean")
+
+# Hierarchical clustering using ward.D
+hc1 <- hclust(d, method = "ward.D" )
+
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+
+
+# Compute with agnes ##Which a different method for agglomeration clustering.
+hc2 <- agnes(PCA_dat, method = "complete")
+
+# Agglomerative coefficient
+hc2$ac
+## [1] 0.9918504
+
+
+
+# methods to assess
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+
+# function to compute coefficient
+ac <- function(x) {
+  agnes(PCA_dat, method = x)$ac
+}
+
+map_dbl(m, ac)
+#average    single  complete      ward 
+#0.9836124 0.9734699 0.9918504 0.9979835 
+
+###Let's use the method with the best coefficient. 
+hc3 <- agnes(PCA_dat, method = "ward")
+pltree(hc3, cex = 0.2, hang = -1, main = "Dendrogram of agnes")
+
+
+#Similar to k-means we can use the elbow method to generate a scree plot and visualy 
+#inspect the best number of clusters.
+fviz_nbclust(PCA_dat, FUN = hcut, method = "wss")
+
+###Using factoextra library
+res <- hcut(PCA_dat, k = 2, stand = TRUE)
+res$cluster
+fviz_dend(res, rect = TRUE)
+
+# Visualize clusters as scatter plots
+fviz_cluster(res)
+
+
+
+### Breast_Cancer dataset we used for the clustering R-athon, we saw that there were some collinearity problems while performing the dimensionality 
+
+
+###############PCA#########
+
+##Read Dataset
+br_cancer = read.csv("Breast_Cancer.csv")
+
+##First Observations
+head(br_cancer)
+
+#Subset to only the numerical variables to evaluate
+PCA_dat = br_cancer[,c(3:32)]
+
+##Proportion of diagnosis
+table(br_cancer$diagnosis)
+
+##Check for linearity and correlation among variables
+
+##library("PerformanceAnalytics")
+cor_dat = cor(PCA_dat)
+corrplot::corrplot(cor_dat, method="number",type="upper",tl.cex	=0.3,cl.cex=0.5,number.cex=0.5)
+
+
+###This function would allow me to see a dataframe of the pairwise variables
+pairwiseCor <- function(dataframe){
+  pairs <- combn(names(dataframe), 2, simplify=FALSE)
+  df <- data.frame(Vairable1=rep(0,length(pairs)), Variable2=rep(0,length(pairs)), 
+                   AbsCor=rep(0,length(pairs)), Cor=rep(0,length(pairs)))
+  for(i in 1:length(pairs)){
+    df[i,1] <- pairs[[i]][1]
+    df[i,2] <- pairs[[i]][2]
+    df[i,3] <- round(abs(cor(dataframe[,pairs[[i]][1]], dataframe[,pairs[[i]][2]])),4)
+    df[i,4] <- round(cor(dataframe[,pairs[[i]][1]], dataframe[,pairs[[i]][2]]),4)
+  }
+  pairwiseCorDF <- df
+  pairwiseCorDF <- pairwiseCorDF[order(pairwiseCorDF$AbsCor, decreasing=TRUE),]
+  row.names(pairwiseCorDF) <- 1:length(pairs)
+  pairwiseCorDF <<- pairwiseCorDF
+  pairwiseCorDF
+}
+
+pairDF_cor =  pairwiseCor(PCA_dat)
+
+##It seems that the area variables are more correlated with other variables but less important overall for
+##the model
+
+to_remove_collinear = c("radius_mean", "radius_worst", "area_mean", "area_worst", "radius_se", 
+                        "perimeter_mean", "area_se", "concavity_mean", "texture_mean", "concave.points_worst")
+
+PCA_dat_Model2 = PCA_dat[,!names(PCA_dat) %in% to_remove_collinear]
+
+dim(PCA_dat)
+
+##Using the prcomp function
+pc_MD2 <- prcomp(PCA_dat_Model2,
+             center = TRUE,
+             scale. = TRUE)
+
+###Plot PC1 and PC2
+PCA_data_MD2 = as.data.frame(pc_MD2$x)
+PCA_data_MD2$group <- br_cancer$diagnosis
+
+ggplot(PCA_data_MD2,aes(x=PC1,y=PC2,color=factor(group) ))+
+  geom_point()+
+  labs(title="Breast Cancer Diagnosis")+
+  theme_bw()
+
+##What is this telling us regarding the ammount of information on these 2 PCs
+ggplot(PCA_data_MD2,aes(x=PC2,y=PC3,color=factor(group) ))+
+  geom_point()+
+  labs(title="Breast Cancer Diagnosis")+
+  theme_bw()
+##scree plot
+
+variance_MD2 = pc_MD2$sdev^2 / sum(pc_MD2$sdev^2)
+variance_MD2
+
+cumsum(variance_MD2)       
+
+
+###
+
+qplot(c(1:length(variance_MD2)), variance_MD2) +
+  geom_line(size = 2, col = "forestgreen") +
+  geom_col(alpha = 0.75) +
+  geom_point(size=2)+
+  geom_text(aes(label = round(variance_MD2,3)),vjust = -0.3, hjust = -0.5,colour = "salmon") +
+  xlab("Principal Component") +
+  ylab("Variance Explained") +
+  ggtitle("Scree Plot Breast Cancer Diagnosis PCA") +
+  ylim(0, 0.6) + 
+  theme_bw()
+
+qplot(c(1:length(variance)), variance) +
+  geom_line(size = 2, col = "forestgreen") +
+  geom_col(alpha = 0.75) +
+  geom_point(size=2)+
+  geom_text(aes(label = round(variance,3)),vjust = -0.3, hjust = -0.5,colour = "salmon") +
+  xlab("Principal Component") +
+  ylab("Variance Explained") +
+  ggtitle("Scree Plot Breast Cancer Diagnosis PCA") +
+  ylim(0, 0.6) + 
+  theme_bw()
+
+
+
+###Let's study the loadings for the first 3 PCs
+sort(abs(pc$rotation[,1]),decreasing = T) ##Dominated by different concavity variables -- Are these collinear variables?
+sort(abs(pc_MD2$rotation[,1]),decreasing = T) ##compactness_mean has a higher contribution is this a better variable?
+
+
+##How do we do with kmeans
+library(tidyverse)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra)
+set.seed(10)
+k4_PCA_M2 <- kmeans(pc_MD2$x[,1:10], centers = 2, nstart = 25)
+
+##Visualize the clusters using the same cancer data
+fviz_cluster(k4_PCA_M2, data = PCA_dat)
+
+###Confusion Matrix
+table(br_cancer$diagnosis, k4_PCA_M2$cluster)
+#Import required library
+library(caret)
+br_binary = ifelse(br_cancer$diagnosis=="B",1,2)
+confusionMatrix(factor(k4_PCA_M2$cluster),factor(br_binary))
+br_binary = ifelse(br_cancer$diagnosis=="B",1,2)
+confusionMatrix(factor(k4_PCA$cluster),factor(br_binary))
+

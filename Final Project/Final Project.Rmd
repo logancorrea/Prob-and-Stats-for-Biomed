@@ -3,25 +3,25 @@
 # https://www.kaggle.com/datasets/noepinefrin/tcga-lusc-lung-cell-squamous-carcinoma-gene-exp?resource=download
 
 # Read the CSV file
-df <- read.csv('data/LUSCexpfile.csv', sep = ';')
+#df <- read.csv('data/LUSCexpfile.csv', sep = ';')
 
 # Determine the number of rows in each part
-num_rows <- nrow(df) %/% 6
+#num_rows <- nrow(df) %/% 6
 
 # Split the dataframe into equal parts
-parts <- lapply(0:5, function(i) df[(i*num_rows + 1):((i+1)*num_rows), ])
+#parts <- lapply(0:5, function(i) df[(i*num_rows + 1):((i+1)*num_rows), ])
 
 # Create a directory to save the parts
-folder_name <- "Data"
-dir.create(folder_name, showWarnings = FALSE)
+#folder_name <- "Data"
+#dir.create(folder_name, showWarnings = FALSE)
 
 # Save each part into separate CSV files inside the "data" folder
-for (i in 1:length(parts)) {
-  write.csv(parts[[i]], file.path(folder_name, paste0('part_', i, '.csv')), row.names = FALSE)
-}
+#for (i in 1:length(parts)) {
+#  write.csv(parts[[i]], file.path(folder_name, paste0('part_', i, '.csv')), row.names = FALSE)
+#}
   
 # Delete the original CSV file
-file.remove('data/LUSCexpfile.csv')
+#file.remove('data/LUSCexpfile.csv')
 ```
 
 ```{r load parts}
@@ -132,6 +132,9 @@ tumorData <- tumorData[, -which(names(tumorData) == "Diagnosis")]
 log2FC <- numeric(ncol(combinedData))
 pValues <- numeric(ncol(combinedData))
 
+# Number of tests
+num_tests <- ncol(combinedData)
+
 for (i in 1:(ncol(combinedData))) {
   geneExpressionNormal <- normalData[,i]
   geneExpressionTumor <- tumorData[,i]
@@ -140,8 +143,14 @@ for (i in 1:(ncol(combinedData))) {
   log2FC[i] <- log2(mean(geneExpressionTumor) / mean(geneExpressionNormal))
   
   # Calculate p-value using Welch's t-test
-  pValues[i] <- t.test(geneExpressionTumor, geneExpressionNormal)$p.value
+  pval <- t.test(geneExpressionTumor, geneExpressionNormal)$p.value
+  
+  # Apply Bonferroni correction
+  pValues[i] <- pval * num_tests
 }
+
+# Ensure p-values are capped at 1
+pValues[pValues > 1] <- 1
 
 # Create a data frame to store results
 results <- data.frame(
@@ -150,6 +159,9 @@ results <- data.frame(
   PValue = pValues
 )
 
+# Calculate the significance level after Bonferroni correction
+bonferroni_PValue <- .05 / num_tests
+
 library(ggplot2)
 
 # Convert p-values to -log10(p-value) for plotting
@@ -157,8 +169,8 @@ results$NegLogPValue <- -log10(results$PValue)
 
 # Define up-regulated and down regulated genes
 results$ChangeCategory <- with(results,
-                               ifelse(PValue < 0.05 & Log2FoldChange > 1.5, "Upregulated",
-                                      ifelse(PValue < 0.05 & Log2FoldChange < -1.5, "Downregulated", "Normal Regulation")))
+                               ifelse(PValue < bonferroni_PValue & Log2FoldChange > 1.5, "Upregulated",
+                                      ifelse(PValue < bonferroni_PValue & Log2FoldChange < -1.5, "Downregulated", "Normal Regulation")))
 
 # Define genes of interest
 results$IsInterest <- ifelse(results$Gene %in% genes_interest, "Yes", "No")
@@ -169,7 +181,7 @@ volcanoPlot <- ggplot(results, aes(x=Log2FoldChange, y=NegLogPValue, color=Chang
   scale_color_manual(values=c("Upregulated"="red4", "Downregulated"="royalblue4", "Normal Regulation"="grey")) +
   labs(x="Log2 Fold Change", y="-Log10 P-value", title="Volcano Plot of Gene Expression") +
   theme_minimal() +
-  geom_hline(yintercept=-log10(0.05), linetype="dashed", color = "black") +  # Significance threshold line
+  geom_hline(yintercept=-log10(bonferroni_PValue), linetype="dashed", color = "black") +  # Significance threshold line
   theme(legend.title=element_blank(), legend.position="right")  # Customize legend
 
 volcanoPlot <- volcanoPlot + 
@@ -187,6 +199,9 @@ downregulated_percent <- 100 * sum(results$ChangeCategory == "Downregulated") / 
 upregulated_percent <- 100 * sum(results$ChangeCategory == "Upregulated") / nrow(results)
 normal_percent <- 100 * sum(results$ChangeCategory == "Normal Regulation") / nrow(results)
 
+# Print the adjusted significance level
+print(paste("Bonferroni corrected threshold:", bonferroni_PValue))
+
 # Print the percentages
 print(paste("Percentage of downregulated genes:", round(downregulated_percent, 2), "%"))
 print(paste("Percentage of upregulated genes:", round(upregulated_percent, 2), "%"))
@@ -196,7 +211,7 @@ print(paste("Percentage of genes with normal regulation:", round(normal_percent,
 ```
 ```{r filter and scale}
 # filter for significant genes. p-value <0.05 and absolute value of fold change >1.5
-result_mask <- subset(results, PValue < 0.05 & abs(Log2FoldChange) > 1.5)
+result_mask <- subset(results, PValue < bonferroni_PValue & abs(Log2FoldChange) > 1.5)
 
 # filter data
 filtered <- df[, c("Diagnosis", intersect(colnames(df), result_mask$Gene))]
@@ -345,16 +360,19 @@ pheatmap(combined_log2[top_genes, combined_random_patients],
 
 ```
 
-
-```{r pca}
-library(factoextra)
+```{r PCA dataframe}
 
 # create filtered pca dataframe
 pca_df <- data.frame(scaled)
 
+# create dependent variable column
 pca_groups <- data.frame(Diagnosis = filtered$Diagnosis)
 pca_groups <- as.data.frame(pca_groups[-rows_to_remove, ])
 colnames(pca_groups)[1] <- "Diagnosis"
+```
+
+```{r collinear identification}
+library(factoextra)
 
 # Compute the covariance matrix
 covariance_matrix <- cov(pca_df)
@@ -376,6 +394,10 @@ for (collinear_pair in collinear_variables) {
   pca_df <- pca_df[, !(colnames(pca_df) %in% collinear_pair[1])]
 }
 
+
+```
+
+```{r pca}
 # perform pca
 pca_result <- prcomp(pca_df, scale. = FALSE)
 
@@ -397,6 +419,7 @@ pc_scores <- as.data.frame(pc_scores)
 # Get eigenvalues
 eigenvectors <- pca_result$rotation
 ```
+
 
 ```{r pca graphs}
 library("GGally")
@@ -421,7 +444,6 @@ fviz_pca_ind(pca_result,
              col.lab = c("normal" = "steelblue2", "tumor" = "firebrick3"))
 
 ```
-
 
 ```{r PCA regression model}
 
