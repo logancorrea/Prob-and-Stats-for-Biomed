@@ -1,0 +1,301 @@
+---
+title: "Exam_2"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+    df_print: paged
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+  word_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Submit this assignment as a single .R file. As for Problem Set #1, use annotations to explain your code and answer non-R questions. Problems that require the use of R for analyses are marked with #R.
+
+## 1. 
+
+### For the R components of this question, use the dataset Breast_Cancer 
+
+### During the Monday R Session, we tested the Breast_Cancer dataset and observed significant correlations (collinearity) between certain variables. We also found that the PCA analysis of the dataset produced limited information for many of the principal components. One possibility discussed was that the collinearity between some of the variables might potentially have affected our PCA analysis.
+
+## A. 
+### Explain, generally, why collinearity might affect results for PCA.
+
+------------------------------------------------------------------------
+Collinearity can significantly impact PCA by affecting the variance distribution among the principal components. When variables are highly collinear, they contribute redundant information, which can lead to an overestimation of the importance (variance) of certain principal components.
+
+------------------------------------------------------------------------
+
+## B. 
+
+### In class, we used a correlation matrix to identify collinear variables.
+
+### Construct a version of the Breast_Cancer dataset in which you remove columns of highly correlated variables. You should choose the value of the correlation cutoff above which you remove the data, and make sure to explain your choice in your code annotation.
+```{r 1st PCA}
+##Read Dataset
+br_cancer = read.csv("Breast_Cancer.csv")
+
+# create variable subset
+pca_df = br_cancer[,c(3:32)]
+
+# perform pca
+pca_result <- prcomp(pca_df, center = TRUE, scale. = TRUE)
+
+# Examine the summary of PCA result
+summary(pca_result)
+```
+
+```{r PCA_cor}
+# correlation matrix
+cor_matrix = cor(pca_df)
+#corrplot::corrplot(cor_matrix, method="number",type="upper",tl.cex	=0.6,cl.cex=0.5,number.cex=0.5)
+
+### Identify collinear variables (rule of thumb is pearson's correlation above 0.9 is collinear)
+threshold <- 0.9  
+collinear_variables <- data.frame(Variable1 = character(),
+                                  Variable2 = character(),
+                                  Correlation = numeric(),
+                                  stringsAsFactors = FALSE)
+
+# Loop through each pair of variables in the correlation matrix
+for (i in 1:(ncol(cor_matrix) - 1)) {
+  for (j in (i + 1):ncol(cor_matrix)) {
+    cor_value <- cor_matrix[i, j]  # Capture the correlation value
+    if (abs(cor_value) > threshold) {
+      # Append the new row to the dataframe
+      collinear_variables <- rbind(collinear_variables, 
+                                   data.frame(Variable1 = colnames(pca_df)[i], 
+                                              Variable2 = colnames(pca_df)[j], 
+                                              Correlation = cor_value))
+    }
+  }
+}
+
+# remove first variable in collinear varibles
+pca2_df <- pca_df
+
+for (i in seq_len(nrow(collinear_variables))) {
+  variable_to_remove <- collinear_variables$Variable1[i]
+  pca2_df <- pca2_df[, !(colnames(pca2_df) == variable_to_remove)]
+}
+```
+
+## C. 
+### Run the PCA analysis again with your new dataset.
+```{r 2nd PCA}
+
+# perform pca
+pca2_result <- prcomp(pca2_df, center = TRUE, scale. = TRUE)
+
+# Examine the summary of PCA result
+summary(pca2_result)
+
+```
+
+
+## D. 
+### Perform a scree plot of your new PCA analysis.
+```{r scree plot}
+library(ggplot2)
+
+# calculate cumulative variance
+variance <- pca2_result$sdev^2 / sum(pca2_result$sdev^2)
+cumulative_variance <- cumsum(variance)       
+
+# Creating the scree plot
+ggplot(data = data.frame(PC = 1:length(variance), Variance = variance), aes(x = PC, y = Variance)) +
+  geom_line(size = 1, col = "red4") + 
+  geom_point(size = 2) +
+  geom_text(aes(label = round(Variance, 3)), vjust = -0.1, hjust = -0.5, colour = "black") +
+  xlab("Principal Component") +
+  ylab("Variance Explained") +
+  ggtitle("Scree Plot Breast Cancer Diagnosis PCA") + 
+  scale_x_continuous(breaks = 1:length(variance)) +
+  ylim(0, max(cumulative_variance) * 1.1)
+
+
+```
+
+## E. 
+### Describe the contribution of each of the new most significant PCs to the overall data.
+```{r pca contribution}
+
+# Get loadings
+loadings <- pca2_result$rotation
+
+# Analyze the first five principal components
+for (pc in 1:5) {
+    pca_loadings <- loadings[, pc]
+    
+    # Sort the eigenvectors by absolute value in descending order and take the top 3
+    top_contributors <- sort(abs(pca_loadings), decreasing = TRUE)[1:3]
+    
+    # Get top contributing variables
+    top_contributor_names <- names(top_contributors)
+    
+    # Print the results
+    cat(sprintf("Top 3 contributors for PC%d:\n", pc))
+    for (contributor in top_contributor_names) {
+        cat(sprintf("%s: %f\n", contributor, pca_loadings[contributor]))
+    }
+    cat("\n")
+}
+```
+
+## F. 
+### Perform a dotplot of PC1 vs PC2 and PC2 vs PC3 of your new PCA analysis.
+```{r scatterplots}
+# PCA scores for five principal components
+pca_subset <- pca2_result$x[, 1:5]
+
+# set diagnosis column
+diagnosis <- br_cancer$diagnosis
+
+# Combine scores with diagnosis into one dataframe
+plot_data <- data.frame(pca_subset, diagnosis = diagnosis)
+
+library("GGally")
+library("factoextra")
+
+# PCA1 vs PCA2
+fviz_pca_ind(pca2_result,
+             geom.ind = "point",           
+             col.ind = factor(plot_data$diagnosis, levels = unique(plot_data$diagnosis)),
+             palette = c("firebrick3", "steelblue2"),
+             addEllipses = TRUE,           
+             legend.title = "Groups",
+             title = "PC1 vs PC2",
+             col.lab = c("B" = "steelblue2", "M" = "firebrick3"))
+
+# PC2 vs PC3
+fviz_pca_ind(pca2_result,
+             axes = c(2, 3),               # PC2 vs PC3
+             geom.ind = "point",           # Show points only
+             col.ind = factor(plot_data$diagnosis, levels = unique(plot_data$diagnosis)),  # Color by groups
+             palette = c("firebrick3", "steelblue2"),
+             addEllipses = TRUE,          # Concentration ellipses
+             legend.title = "Groups",
+             title = "PC2 vs PC3",
+             col.lab = c("B" = "steelblue2", "M" = "firebrick3"))
+
+```
+
+
+
+## G 
+### Describe the main PCs that you obtain, comparing them to the original PCA results obtained in class. In particular, address the question whether the new analysis leads to more information obtained for each PC.
+
+The first PCA exhibits higher standard deviations and explains a slightly larger proportion of variance in the data compared to the PCA with collinear variables removed. The original PCA has a cumulative proportion of variance explained by the first five PCs totaling 84.73%. Conversely, the reduced PCA also captures a significant amount of variance, with a cumulative proportion of 81.54% for the first five PCs. For the reduced PCA, the top contributors for the PC1 were compactness mean, compactness worst, and concavity worst. PC1 top contributors consisted of area worst, smoothness se, and fractal dimension se. The top contributors for PC3 consist of area se, smoothness worst, concave points se. 
+
+The removal of collinear variables in the reduced PCA ensures a clearer interpretation of the remaining variables' contributions to each PC, resulting in a more refined representation of the data's underlying structure. By eliminating redundant information, the reduced PCA analysis ensures that the remaining variables contribute more independently to each principal component, enhancing the interpretability and informativeness of the extracted components. Consequently, each component may capture more distinct and non-redundant aspects of the underlying data structure, resulting in a more informative representation compared to the original PCA analysis.
+
+## E. 
+### What are the implications of your analysis for clinical practice and/or data gathering?
+
+This analysis suggests that variables such as compactness mean, compactness worst, and concavity worst, which prominently contribute to the first principal component, could serve as crucial indicators of breast cancer malignancy. Conversely, redundant information from variables like radius mean, texture mean, and perimeter mean may render their collection unnecessary. 
+
+## 2. Here is a dataset of bird observations taken in two environments ("remnant" and "restored"):
+
+```{r, layout="l-body-outset"}
+birds = data.frame(
+  stringsAsFactors = FALSE,
+                        Species = c("Ruby-crowned kinglet","White-crowned sparrow",
+                               "Lincoln's sparrow","Golden-crowned sparrow","Bushtit",
+                               "Song Sparrow","Spotted towhee","Bewick's wren",
+                               "Hermit thrush","Dark-eyed junco",
+                               "Lesser goldfinch","Uncommon"),
+                        Remnant = c(677L,408L,
+                               270L,300L,198L,150L,137L,106L,119L,34L,57L,
+                               457L),
+                        Restored = c(198L,260L,
+                               187L,89L,91L,50L,32L,48L,24L,39L,15L,125L)
+        )
+
+library(knitr)
+kable(birds)
+```
+
+## 2A. 
+### Calculate a Chi-square value and p-value for this table (you may use R or another online calculator, but be clear about your method. Include the URL if relevant).
+```{r Chi}
+result <- chisq.test(birds[,2:3])
+
+# Print Chi-square value and p-value
+cat("Chi-square value:", result$statistic, "\n")
+cat("p-value:", result$p.value, "\n")
+```
+
+## 2B. 
+### To identify which, if any, of the birds show a different distribution in the two habitats, compare each of the 12 species to an amalgamation of all of the other species in the table using a 2x2 matrix approach to produce p values. You may use R or another online calculator, but you must be explicit as to which 2x2 analysis method and parameters you use and explain why your method is appropriate. Include the URL if relevant
+```{r}
+# Initialize an empty vector to store p-values
+p_values <- numeric(length(birds$Species))
+
+# Loop through each species
+for (i in 1:nrow(birds)) {
+  # Create a contingency table for the current species vs. all other species
+  current_species <- birds$Species[i]
+  current_count <- birds$Remnant[i]
+  other_counts <- sum(birds$Remnant[-i])
+  contingency_table <- matrix(c(current_count, other_counts,
+                                birds$Restored[i], sum(birds$Restored) - birds$Restored[i]),
+                              nrow = 2,
+                              byrow = TRUE)
+  
+  # Perform chi-square test for the current species
+  result <- chisq.test(contingency_table)
+  
+  # Store the p-value
+  p_values[i] <- result$p.value
+}
+
+# Create a data frame for species and p-values
+p_values_df <- data.frame(Species = birds$Species, p_value = p_values)
+
+# Print the table
+print(p_values_df)
+
+# The chi-squared test is particularly suitable for analyzing bird species distributions between habitats because it is designed for categorical data, like the species presence and habitat type used here. It effectively tests the independence of these variables, comparing observed species counts against expected counts if no association existed. 
+```
+
+
+## 2C. 
+### Identify which species differ(s) from the other birds using a nominal cutoff of 0.05 and the appropriate Bonferroni correction.
+```{r}
+# Number of species
+num_species <- nrow(birds)
+
+# Bonferroni corrected significance level
+significance_level <- 0.05 / num_species
+
+# Vector to store significant species
+significant_species <- character()
+
+# Identify significant species using Bonferroni correction
+for (i in 1:num_species) {
+  if (p_values[i] < significance_level) {
+    significant_species <- c(significant_species, birds$Species[i])
+  }
+}
+
+# Print significant species
+cat("Significant Species using Bonferroni correction:\n")
+for (species in significant_species) {
+    cat(species, "\n")
+}
+```
+
+## 2D. 
+### In a literature search, you discover that dark-eyed juncos and white-crowned sparrows are thought to despise each other. How does this information affect your interpretation of your results?
+
+Habitat preferences are influenced not only by availability, but also by species interaction. This knowledge provides context for distribution patterns seen by dark-eyed juncos and white-crowned sparrows.Despite their known antagonistic relationship, their significant presence in the same habitats indicates that factors beyond species interactions likely influence their distribution patterns. 

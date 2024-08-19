@@ -1,0 +1,104 @@
+```{r}
+library(caret)
+library(pROC)
+
+# Assuming pca_df and pca_groups are your full datasets
+
+# Split the data into training and test sets (70% train, 30% test)
+set.seed(123)  # For reproducibility
+index <- createDataPartition(pca_groups$Diagnosis, p = 0.7, list = FALSE)
+train_pca_df <- pca_df[index, ]
+test_pca_df <- pca_df[-index, ]
+train_pca_groups <- pca_groups[index, , drop = FALSE]
+test_pca_groups <- pca_groups[-index, , drop = FALSE]
+
+# convert to factor
+train_pca_groups$Diagnosis <- as.factor(train_pca_groups$Diagnosis)
+test_pca_groups$Diagnosis <- as.factor(test_pca_groups$Diagnosis)
+
+# Perform PCA on the training set
+pca_model <- prcomp(train_pca_df, center = TRUE, scale. = TRUE)
+
+# Transform the training and test sets
+train_pca <- predict(pca_model, train_pca_df)
+test_pca <- predict(pca_model, test_pca_df)
+
+# Combine the PCA components with the diagnosis for the training set
+train_data <- data.frame(Diagnosis = train_pca_groups$Diagnosis, train_pca)
+
+# Train logistic regression model on the training data
+lg_model <- glm(Diagnosis ~ ., data = train_data, family = binomial())
+
+# Transform test_pca data to match the model's expectations (as a dataframe)
+test_data <- data.frame(test_pca)
+
+# Predict probabilities on the training set for ROC
+train_probabilities <- predict(lg_model, newdata = train_data, type = "response")
+
+# Predict probabilities on the test set for ROC
+test_probabilities <- predict(lg_model, newdata = test_data, type = "response")
+
+# Create a ROC curve object for the training set
+roc_train <- roc(response = train_pca_groups$Diagnosis, predictor = train_probabilities)
+
+# Create a ROC curve object for the test set
+roc_test <- roc(response = test_pca_groups$Diagnosis, predictor = test_probabilities)
+
+# Plot ROC curve for both
+plot(roc_train, main = "ROC Curve for Training and Test Sets", col = "blue", print.auc=TRUE)
+plot(roc_test, add=TRUE, col = "red", print.auc=TRUE)
+legend("bottomright", legend=c("Train", "Test"), col=c("blue", "red"), lwd=2)
+abline(a=0, b=1, lty=2, col = "black")
+```
+```{r oversampling}
+#pca_combined <- cbind(pca_groups, pca_df)
+
+# Subset the normal and tumor patients
+#pca_normal <- pca_combined[pca_combined$Diagnosis == 0, ]
+#pca_tumor <- pca_combined[pca_combined$Diagnosis == 1, ]
+
+# Sample from normal patients with replacement to increase their count
+#oversampled_normals <- pca_normal[sample(nrow(pca_normal), 400, replace = TRUE), ]
+
+# Combine the oversampled normals with the tumor patients
+#oversampled_pca <- rbind(oversampled_normals, pca_tumor)
+
+# Separate diagnosis group with oversampled data
+#pca_df <- subset(oversampled_pca, select = -Diagnosis)
+#pca_groups <- subset(oversampled_pca, select = Diagnosis)
+
+```
+
+```{r bonef}
+# Initialize vectors to store results
+log2FC <- numeric(ncol(combinedData))
+pValues <- numeric(ncol(combinedData))
+
+# Number of tests
+num_tests <- ncol(combinedData)
+
+for (i in 1:(ncol(combinedData))) {
+  geneExpressionNormal <- normalData[,i]
+  geneExpressionTumor <- tumorData[,i]
+  
+  # Calculate log2 Fold Change (tumor vs normal)
+  log2FC[i] <- log2(mean(geneExpressionTumor) / mean(geneExpressionNormal))
+  
+  # Calculate p-value using Welch's t-test
+  pval <- t.test(geneExpressionTumor, geneExpressionNormal)$p.value
+  
+  # Apply Bonferroni correction
+  pValues[i] <- pval * num_tests
+}
+
+# Ensure p-values are capped at 1
+pValues[pValues > 1] <- 1
+
+# Create a data frame to store results
+results <- data.frame(
+  Gene = colnames(df)[-1],  # Exclude the Diagnosis column
+  Log2FoldChange = log2FC,
+  PValue = pValues
+)
+```
+
